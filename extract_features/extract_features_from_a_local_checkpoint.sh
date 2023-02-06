@@ -11,7 +11,7 @@ LOCAL_CHECKPOINT= # path/to/local/checkpoint/file.pth
 BACKBONE= # Set the backbone used in the LOCAL_CHECKPOINT: r2plus1d_34, r2plus1d_18, or r3d_18
 
 # Choose the stride between clips, e.g. 16 for non-overlapping clips and 1 for dense overlapping clips
-STRIDE=16 
+STRIDE=1
 
 # Optional: Split the videos into multiple shards for parallel feature extraction
 # Increase the number of shards and run this script independently on separate GPU devices,

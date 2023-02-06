@@ -25,10 +25,10 @@ def parse_args():
                         help='Path to the h5 file containing global video features (GVF). '
                              'If not given, then train without GVF.')
 
-    parser.add_argument('--backbone', default='r2plus1d_34',
-                        choices=['r2plus1d_34', 'r2plus1d_18', 'r3d_18'],
+    parser.add_argument('--backbone', default='i3d',
+                        choices=['r2plus1d_34', 'r2plus1d_18', 'r3d_18', 'i3d'],
                         help='Encoder backbone architecture (default r2plus1d_34). '
-                             'Supported backbones are r2plus1d_34, r2plus1d_18, and r3d_18')
+                             'Supported backbones are r2plus1d_34, r2plus1d_18, r3d_18 and i3d')
     parser.add_argument('--device', default='cuda',
                         help='Device to train on (default: cuda)')
 

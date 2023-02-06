@@ -209,17 +209,39 @@ def main(args):
 
     criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)  # targets with -1 indicate missing label
 
-    backbone_params = chain(model.features.layer1.parameters(),
-                            model.features.layer2.parameters(),
-                            model.features.layer3.parameters(),
-                            model.features.layer4.parameters())
+    if args.backbone == 'i3d':
+        backbone_params = chain(model.features.conv3d_1a_7x7.parameters(),
+                                model.features.conv3d_2b_1x1.parameters(),
+                                model.features.conv3d_2c_3x3.parameters(),
+                                model.features.mixed_3b.parameters(),
+                                model.features.mixed_3c.parameters(),
+                                model.features.mixed_4b.parameters(),
+                                model.features.mixed_4c.parameters(),
+                                model.features.mixed_4d.parameters(),
+                                model.features.mixed_4e.parameters(),
+                                model.features.mixed_4f.parameters(),
+                                model.features.mixed_5b.parameters(),
+                                model.features.mixed_5c.parameters())
+    else:
+        backbone_params = chain(model.features.layer1.parameters(),
+                                model.features.layer2.parameters(),
+                                model.features.layer3.parameters(),
+                                model.features.layer4.parameters())
+
     fc_params = model.fc.parameters() if len(args.label_columns) == 1 \
         else chain(model.fc1.parameters(), model.fc2.parameters())
-    params = [
-        {'params': model.features.stem.parameters(), 'lr': 0, 'name': 'stem'},
-        {'params': backbone_params, 'lr': args.backbone_lr * args.world_size, 'name': 'backbone'},
-        {'params': fc_params, 'lr': args.fc_lr * args.world_size, 'name': 'fc'}
-    ]
+
+    if args.backbone == 'i3d':
+        params = [
+            {'params': backbone_params, 'lr': args.backbone_lr * args.world_size, 'name': 'backbone'},
+            {'params': fc_params, 'lr': args.fc_lr * args.world_size, 'name': 'fc'}
+        ]
+    else:
+        params = [
+            {'params': model.features.stem.parameters(), 'lr': 0, 'name': 'stem'},
+            {'params': backbone_params, 'lr': args.backbone_lr * args.world_size, 'name': 'backbone'},
+            {'params': fc_params, 'lr': args.fc_lr * args.world_size, 'name': 'fc'}
+        ]
 
     optimizer = torch.optim.SGD(
         params, momentum=args.momentum, weight_decay=args.weight_decay
