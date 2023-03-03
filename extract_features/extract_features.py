@@ -66,9 +66,9 @@ def main(args):
 
     transform = torchvision.transforms.Compose([
         T.ToFloatTensorInZeroOne(),
-        T.Resize((128, 171)),
+        T.Resize((256, 341)),
         normalize,
-        T.CenterCrop((112, 112))
+        T.CenterCrop((224, 224))
     ])
 
     metadata_df = pd.read_csv(args.metadata_csv_filename)

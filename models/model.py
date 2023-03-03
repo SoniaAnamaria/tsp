@@ -67,10 +67,10 @@ class Model(nn.Module):
 
         # remove the FC layer of the backbone
         if backbone == 'i3d':
-            feature_size = feature_backbone.fc.in_channels
+            feature_size = feature_backbone.logits.in_channels
         else:
-            feature_size = feature_backbone.fc.in_features
-        feature_backbone.fc = nn.Sequential()
+            feature_size = feature_backbone.logits.in_features
+        feature_backbone.logits = nn.Sequential()
 
         return feature_backbone, feature_size
 

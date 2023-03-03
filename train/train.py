@@ -149,10 +149,10 @@ def main(args):
 
     transform_train = torchvision.transforms.Compose([
         T.ToFloatTensorInZeroOne(),
-        T.Resize((128, 171)),
+        T.Resize((256, 341)),
         T.RandomHorizontalFlip(),
         normalize,
-        T.RandomCrop((112, 112))
+        T.RandomCrop((224, 224))
     ])
 
     dataset_train = UntrimmedVideoDataset(
@@ -170,9 +170,9 @@ def main(args):
 
     transform_valid = torchvision.transforms.Compose([
         T.ToFloatTensorInZeroOne(),
-        T.Resize((128, 171)),
+        T.Resize((256, 341)),
         normalize,
-        T.CenterCrop((112, 112))
+        T.CenterCrop((224, 224))
     ])
 
     dataset_valid = UntrimmedVideoDataset(
@@ -210,18 +210,18 @@ def main(args):
     criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)  # targets with -1 indicate missing label
 
     if args.backbone == 'i3d':
-        backbone_params = chain(model.features.conv3d_1a_7x7.parameters(),
-                                model.features.conv3d_2b_1x1.parameters(),
-                                model.features.conv3d_2c_3x3.parameters(),
-                                model.features.mixed_3b.parameters(),
-                                model.features.mixed_3c.parameters(),
-                                model.features.mixed_4b.parameters(),
-                                model.features.mixed_4c.parameters(),
-                                model.features.mixed_4d.parameters(),
-                                model.features.mixed_4e.parameters(),
-                                model.features.mixed_4f.parameters(),
-                                model.features.mixed_5b.parameters(),
-                                model.features.mixed_5c.parameters())
+        backbone_params = chain(model.features.Conv3d_1a_7x7.parameters(),
+                                model.features.Conv3d_2b_1x1.parameters(),
+                                model.features.Conv3d_2c_3x3.parameters(),
+                                model.features.Mixed_3b.parameters(),
+                                model.features.Mixed_3c.parameters(),
+                                model.features.Mixed_4b.parameters(),
+                                model.features.Mixed_4c.parameters(),
+                                model.features.Mixed_4d.parameters(),
+                                model.features.Mixed_4e.parameters(),
+                                model.features.Mixed_4f.parameters(),
+                                model.features.Mixed_5b.parameters(),
+                                model.features.Mixed_5c.parameters())
     else:
         backbone_params = chain(model.features.layer1.parameters(),
                                 model.features.layer2.parameters(),

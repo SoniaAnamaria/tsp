@@ -92,15 +92,14 @@ class MaxPool3dSamePadding(nn.MaxPool3d):
     def forward(self, x):
         # compute 'same' padding
         (batch, channel, t, h, w) = x.size()
-        print(t, h, w)
-        out_t = np.ceil(float(t) / float(self.stride[0]))
-        out_h = np.ceil(float(h) / float(self.stride[1]))
-        out_w = np.ceil(float(w) / float(self.stride[2]))
-        print(out_t, out_h, out_w)
+        np.ceil(float(t) / float(self.stride[0]))
+        np.ceil(float(h) / float(self.stride[1]))
+        np.ceil(float(w) / float(self.stride[2]))
+
         pad_t = self.compute_pad(0, t)
         pad_h = self.compute_pad(1, h)
         pad_w = self.compute_pad(2, w)
-        print(pad_t, pad_h, pad_w)
+
 
         pad_t_f = pad_t // 2
         pad_t_b = pad_t - pad_t_f
@@ -110,8 +109,6 @@ class MaxPool3dSamePadding(nn.MaxPool3d):
         pad_w_b = pad_w - pad_w_f
 
         pad = (pad_w_f, pad_w_b, pad_h_f, pad_h_b, pad_t_f, pad_t_b)
-        print(x.size())
-        print(pad)
         x = F.pad(x, pad)
         return super(MaxPool3dSamePadding, self).forward(x)
 
@@ -155,15 +152,14 @@ class Unit3D(nn.Module):
     def forward(self, x):
         # compute 'same' padding
         (batch, channel, t, h, w) = x.size()
-        print(t, h, w)
-        out_t = np.ceil(float(t) / float(self.stride[0]))
-        out_h = np.ceil(float(h) / float(self.stride[1]))
-        out_w = np.ceil(float(w) / float(self.stride[2]))
-        print(out_t, out_h, out_w)
+
+        np.ceil(float(t) / float(self.stride[0]))
+        np.ceil(float(h) / float(self.stride[1]))
+        np.ceil(float(w) / float(self.stride[2]))
+
         pad_t = self.compute_pad(0, t)
         pad_h = self.compute_pad(1, h)
         pad_w = self.compute_pad(2, w)
-        print(pad_t, pad_h, pad_w)
 
         pad_t_f = pad_t // 2
         pad_t_b = pad_t - pad_t_f
@@ -173,11 +169,7 @@ class Unit3D(nn.Module):
         pad_w_b = pad_w - pad_w_f
 
         pad = (pad_w_f, pad_w_b, pad_h_f, pad_h_b, pad_t_f, pad_t_b)
-        print(x.size())
-        print(pad)
         x = F.pad(x, pad)
-        print(x.size())
-
         x = self.conv3d(x)
         if self.use_batch_norm:
             x = self.bn(x)
@@ -211,45 +203,45 @@ class I3D(torch.nn.Module):
         super(I3D, self).__init__()
         self.num_classes = num_classes
 
-        self.conv3d_1a_7x7 = Unit3D(in_channels=in_channels, out_channels=64, kernel_shape=[7, 7, 7],
+        self.Conv3d_1a_7x7 = Unit3D(in_channels=in_channels, out_channels=64, kernel_shape=[7, 7, 7],
                                     stride=(2, 2, 2), padding=(3, 3, 3))
-        self.maxPool3d_2a_3x3 = MaxPool3dSamePadding(kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=0)
-        self.conv3d_2b_1x1 = Unit3D(in_channels=64, out_channels=64, kernel_shape=[1, 1, 1], padding=0)
-        self.conv3d_2c_3x3 = Unit3D(in_channels=64, out_channels=192, kernel_shape=[3, 3, 3], padding=1)
-        self.maxPool3d_3a_3x3 = MaxPool3dSamePadding(kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=0)
-        self.mixed_3b = InceptionModule(192, [64, 96, 128, 16, 32, 32])
-        self.mixed_3c = InceptionModule(256, [128, 128, 192, 32, 96, 64])
-        self.maxPool3d_4a_3x3 = MaxPool3dSamePadding(kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=0)
-        self.mixed_4b = InceptionModule(480, [192, 96, 208, 16, 48, 64])
-        self.mixed_4c = InceptionModule(512, [160, 112, 224, 24, 64, 64])
-        self.mixed_4d = InceptionModule(512, [128, 128, 256, 24, 64, 64])
-        self.mixed_4e = InceptionModule(512, [112, 144, 288, 32, 64, 64])
-        self.mixed_4f = InceptionModule(528, [256, 160, 320, 32, 128, 128])
-        self.maxPool3d_5a_2x2 = MaxPool3dSamePadding(kernel_size=(2, 2, 2), stride=(2, 2, 2), padding=0)
-        self.mixed_5b = InceptionModule(832, [256, 160, 320, 32, 128, 128])
-        self.mixed_5c = InceptionModule(832, [384, 192, 384, 48, 128, 128])
+        self.MaxPool3d_2a_3x3 = MaxPool3dSamePadding(kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=0)
+        self.Conv3d_2b_1x1 = Unit3D(in_channels=64, out_channels=64, kernel_shape=[1, 1, 1], padding=0)
+        self.Conv3d_2c_3x3 = Unit3D(in_channels=64, out_channels=192, kernel_shape=[3, 3, 3], padding=1)
+        self.MaxPool3d_3a_3x3 = MaxPool3dSamePadding(kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=0)
+        self.Mixed_3b = InceptionModule(192, [64, 96, 128, 16, 32, 32])
+        self.Mixed_3c = InceptionModule(256, [128, 128, 192, 32, 96, 64])
+        self.MaxPool3d_4a_3x3 = MaxPool3dSamePadding(kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=0)
+        self.Mixed_4b = InceptionModule(480, [192, 96, 208, 16, 48, 64])
+        self.Mixed_4c = InceptionModule(512, [160, 112, 224, 24, 64, 64])
+        self.Mixed_4d = InceptionModule(512, [128, 128, 256, 24, 64, 64])
+        self.Mixed_4e = InceptionModule(512, [112, 144, 288, 32, 64, 64])
+        self.Mixed_4f = InceptionModule(528, [256, 160, 320, 32, 128, 128])
+        self.MaxPool3d_5a_2x2 = MaxPool3dSamePadding(kernel_size=(2, 2, 2), stride=(2, 2, 2), padding=0)
+        self.Mixed_5b = InceptionModule(832, [256, 160, 320, 32, 128, 128])
+        self.Mixed_5c = InceptionModule(832, [384, 192, 384, 48, 128, 128])
         self.avg_pool = nn.AvgPool3d(kernel_size=(2, 7, 7), stride=(1, 1, 1))
         self.dropout = nn.Dropout(dropout_keep_prob)
-        self.fc = Unit3D(in_channels=1024, out_channels=self.num_classes, kernel_shape=[1, 1, 1], padding=0,
-                         activation_fn=None, use_batch_norm=False, use_bias=True)
+        self.logits = Unit3D(in_channels=1024, out_channels=self.num_classes, kernel_shape=[1, 1, 1], padding=0,
+                             activation_fn=None, use_batch_norm=False, use_bias=True)
 
     def forward(self, x, features=True):
-        out = self.conv3d_1a_7x7(x)
-        out = self.maxPool3d_2a_3x3(out)
-        out = self.conv3d_2b_1x1(out)
-        out = self.conv3d_2c_3x3(out)
-        out = self.maxPool3d_3a_3x3(out)
-        out = self.mixed_3b(out)
-        out = self.mixed_3c(out)
-        out = self.maxPool3d_4a_3x3(out)
-        out = self.mixed_4b(out)
-        out = self.mixed_4c(out)
-        out = self.mixed_4d(out)
-        out = self.mixed_4e(out)
-        out = self.mixed_4f(out)
-        out = self.maxPool3d_5a_2x2(out)
-        out = self.mixed_5b(out)
-        out = self.mixed_5c(out)
+        out = self.Conv3d_1a_7x7(x)
+        out = self.MaxPool3d_2a_3x3(out)
+        out = self.Conv3d_2b_1x1(out)
+        out = self.Conv3d_2c_3x3(out)
+        out = self.MaxPool3d_3a_3x3(out)
+        out = self.Mixed_3b(out)
+        out = self.Mixed_3c(out)
+        out = self.MaxPool3d_4a_3x3(out)
+        out = self.Mixed_4b(out)
+        out = self.Mixed_4c(out)
+        out = self.Mixed_4d(out)
+        out = self.Mixed_4e(out)
+        out = self.Mixed_4f(out)
+        out = self.MaxPool3d_5a_2x2(out)
+        out = self.Mixed_5b(out)
+        out = self.Mixed_5c(out)
         out = self.avg_pool(out)  # <- [1, 1024, 8 (for T=64) or 3 (for T=24), 1, 1]
 
         if features:
@@ -259,7 +251,7 @@ class I3D(torch.nn.Module):
             return out  # (B, 1024)
         else:
             out = self.dropout(out)
-            out = self.fc(out)
+            out = self.logits(out)
             out = out.squeeze(3)
             out = out.squeeze(3)
             out = out.mean(2)
