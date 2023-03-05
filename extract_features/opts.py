@@ -32,10 +32,10 @@ def parse_args():
     parser.add_argument('--metadata-csv-filename', required=True,
                         help='Path to the metadata CSV file')
 
-    parser.add_argument('--backbone', default='r2plus1d_34',
-                        choices=['r2plus1d_34', 'r2plus1d_18', 'r3d_18'],
+    parser.add_argument('--backbone', default='x3d',
+                        choices=['r2plus1d_34', 'r2plus1d_18', 'r3d_18', 'x3d'],
                         help='Encoder backbone architecture (default r2plus1d_34). '
-                             'Supported backbones are r2plus1d_34, r2plus1d_18, and r3d_18')
+                             'Supported backbones are r2plus1d_34, r2plus1d_18, r3d_18 and x3d')
     parser.add_argument('--device', default='cuda',
                         help='Device to train on (default: cuda)')
 
@@ -51,7 +51,7 @@ def parse_args():
 
     parser.add_argument('--clip-len', default=16, type=int,
                         help='Number of frames per clip (default: 16)')
-    parser.add_argument('--frame-rate', default=15, type=int,
+    parser.add_argument('--frame-rate', default=12, type=int,
                         help='Frames-per-second rate at which the videos are sampled (default: 15)')
     parser.add_argument('--stride', default=16, type=int,
                         help='Number of frames (after resampling with frame-rate) between consecutive clips (default: 16)')

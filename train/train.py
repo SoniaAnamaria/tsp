@@ -149,10 +149,10 @@ def main(args):
 
     transform_train = torchvision.transforms.Compose([
         T.ToFloatTensorInZeroOne(),
-        T.Resize((128, 171)),
+        T.Resize((256, 341)),
         T.RandomHorizontalFlip(),
         normalize,
-        T.RandomCrop((112, 112))
+        T.RandomCrop((224, 224))
     ])
 
     dataset_train = UntrimmedVideoDataset(
@@ -170,9 +170,9 @@ def main(args):
 
     transform_valid = torchvision.transforms.Compose([
         T.ToFloatTensorInZeroOne(),
-        T.Resize((128, 171)),
+        T.Resize((256, 341)),
         normalize,
-        T.CenterCrop((112, 112))
+        T.CenterCrop((224, 224))
     ])
 
     dataset_valid = UntrimmedVideoDataset(
@@ -209,17 +209,31 @@ def main(args):
 
     criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)  # targets with -1 indicate missing label
 
-    backbone_params = chain(model.features.layer1.parameters(),
-                            model.features.layer2.parameters(),
-                            model.features.layer3.parameters(),
-                            model.features.layer4.parameters())
+    if args.backbone == 'x3d':
+        backbone_params = chain(model.features.x3dBlocks[1].parameters(),
+                                model.features.x3dBlocks[2].parameters(),
+                                model.features.x3dBlocks[3].parameters(),
+                                model.features.x3dBlocks[4].parameters(),
+                                model.features.x3dBlocks[5].parameters())
+    else:
+        backbone_params = chain(model.features.layer1.parameters(),
+                                model.features.layer2.parameters(),
+                                model.features.layer3.parameters(),
+                                model.features.layer4.parameters())
     fc_params = model.fc.parameters() if len(args.label_columns) == 1 \
         else chain(model.fc1.parameters(), model.fc2.parameters())
-    params = [
-        {'params': model.features.stem.parameters(), 'lr': 0, 'name': 'stem'},
-        {'params': backbone_params, 'lr': args.backbone_lr * args.world_size, 'name': 'backbone'},
-        {'params': fc_params, 'lr': args.fc_lr * args.world_size, 'name': 'fc'}
-    ]
+    if args.backbone == 'x3d':
+        params = [
+            {'params': model.features.x3dBlocks[0].parameters(), 'lr': 0, 'name': 'stem'},
+            {'params': backbone_params, 'lr': args.backbone_lr * args.world_size, 'name': 'backbone'},
+            {'params': fc_params, 'lr': args.fc_lr * args.world_size, 'name': 'fc'}
+        ]
+    else:
+        params = [
+            {'params': model.features.stem.parameters(), 'lr': 0, 'name': 'stem'},
+            {'params': backbone_params, 'lr': args.backbone_lr * args.world_size, 'name': 'backbone'},
+            {'params': fc_params, 'lr': args.fc_lr * args.world_size, 'name': 'fc'}
+        ]
 
     optimizer = torch.optim.SGD(
         params, momentum=args.momentum, weight_decay=args.weight_decay

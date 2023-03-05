@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from .backbone import r2plus1d_34, r2plus1d_18, r3d_18
+from .backbone import r2plus1d_34, r2plus1d_18, r3d_18, x3d
 
 
 class Model(nn.Module):
@@ -57,15 +57,20 @@ class Model(nn.Module):
             builder = r2plus1d_18
         elif backbone == 'r3d_18':
             builder = r3d_18
+        elif backbone == 'x3d':
+            builder = x3d
         else:
             raise ValueError(f'<Model>: {backbone} is an invalid architecture type. '
-                             f'Supported  architectures: r2plus1d_34, r2plus1d_18, and r3d_18')
+                             f'Supported  architectures: r2plus1d_34, r2plus1d_18, r3d_18 and x3d')
 
         feature_backbone = builder(pretrained=True, progress=progress, **kwargs)
 
         # remove the FC layer of the backbone
-        feature_size = feature_backbone.fc.in_features
-        feature_backbone.fc = nn.Sequential()
+        if backbone == 'x3d':
+            feature_size = 432
+        else:
+            feature_size = feature_backbone.fc.in_features
+            feature_backbone.fc = nn.Sequential()
 
         return feature_backbone, feature_size
 

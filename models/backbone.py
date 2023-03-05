@@ -7,6 +7,8 @@ from torchvision.models.video.resnet import VideoResNet, R2Plus1dStem, BasicBloc
 
 __all__ = ['r2plus1d_34', 'r2plus1d_18', 'r3d_18']
 
+from models.x3d import X3D, modify_model
+
 R2PLUS1D_34_MODEL_URL = "https://github.com/moabitcoin/ig65m-pytorch/releases/download/v1.0.0/r2plus1d_34_clip8_ft_kinetics_from_ig65m-0aa0550b.pth"
 
 
@@ -71,3 +73,14 @@ class Conv2Plus1D(nn.Sequential):
     @staticmethod
     def get_downsample_stride(stride):
         return (stride, stride, stride)
+
+
+def x3d(pretrained=True, progress=False, **kwargs):
+    model = X3D()
+    if pretrained:
+        state_dict = torch.load("x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth")
+        modify_model()
+        torch.save(state_dict, "x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth")
+        model.load_state_dict(torch.load('x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth'))
+
+    return model

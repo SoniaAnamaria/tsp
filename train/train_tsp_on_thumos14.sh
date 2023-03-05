@@ -39,7 +39,7 @@ LABEL_MAPPING_JSONS="../data/thumos14/thumos14_action_label_mapping.json \
 LOSS_ALPHAS="1.0 1.0"
 GLOBAL_VIDEO_FEATURES=../data/thumos14/global_video_features/r2plus1d_34-max_gvf.h5
 
-BACKBONE=r2plus1d_34
+BACKBONE=x3d
 
 BATCH_SIZE=32
 BACKBONE_LR=0.0001
@@ -51,9 +51,9 @@ MY_MASTER_ADDR=127.0.0.1
 MY_MASTER_PORT=$(shuf -i 30000-60000 -n 1)
 
 # downscaling
-BATCH_SIZE=$(bc <<< $BATCH_SIZE/$DOWNSCALE_FACTOR)
-BACKBONE_LR=$(bc -l <<< $BACKBONE_LR/$DOWNSCALE_FACTOR)
-FC_LR=$(bc -l <<< $FC_LR/$DOWNSCALE_FACTOR)
+BATCH_SIZE=$(($BATCH_SIZE/$DOWNSCALE_FACTOR))
+BACKBONE_LR=$(($BACKBONE_LR/$DOWNSCALE_FACTOR))
+FC_LR=$(($FC_LR/$DOWNSCALE_FACTOR))
 
 source activate tsp
 mkdir -p $OUTPUT_DIR
