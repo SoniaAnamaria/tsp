@@ -34,7 +34,7 @@ def parse_args():
 
     parser.add_argument('--clip-len', default=16, type=int,
                         help='Number of frames per clip (default: 16)')
-    parser.add_argument('--frame-rate', default=12, type=int,
+    parser.add_argument('--frame-rate', default=15, type=int,
                         help='Frames-per-second rate at which the videos are sampled (default: 15)')
     parser.add_argument('--clips-per-segment', default=5, type=int,
                         help='Number of clips sampled per video segment (default: 5)')

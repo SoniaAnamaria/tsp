@@ -43,7 +43,7 @@ def _round_width(width, multiplier, min_width=8, divisor=8):
 
 
 class X3DStem(nn.Module):
-    def __init__(self, in_channels, out_channels, norm_eps=1e-5, norm_momentum=0.9):
+    def __init__(self, in_channels, out_channels, norm_eps=1e-3, norm_momentum=0.9):
         super().__init__()
         self.conv1_s = nn.Conv3d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, 3, 3),
                                  stride=(1, 2, 2), padding=(0, 1, 1), bias=False)
@@ -61,7 +61,7 @@ class X3DStem(nn.Module):
 
 
 class X3DBlock(nn.Module):
-    def __init__(self, in_channels, inter_channels, out_channels, stride=1, norm_eps=1e-5, norm_momentum=0.9,
+    def __init__(self, in_channels, inter_channels, out_channels, stride=1, norm_eps=1e-3, norm_momentum=0.9,
                  reduction=None):
         super().__init__()
         self.in_channels = in_channels
@@ -125,14 +125,14 @@ class X3DStage(nn.Module):
 
 
 class X3DHead(nn.Module):
-    def __init__(self, in_channels, out_channels, nr_classes, norm_eps=1e-5, norm_momentum=0.9):
+    def __init__(self, in_channels, out_channels, nr_classes, norm_eps=1e-3, norm_momentum=0.9):
         super().__init__()
         self.conv5 = nn.Conv3d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, 1, 1), bias=False)
         self.norm = nn.BatchNorm3d(num_features=out_channels, eps=norm_eps, momentum=norm_momentum)
         self.activation = nn.ReLU()
         self.pool = nn.AdaptiveAvgPool3d((1, 1, 1))
-        self.fc1 = nn.Linear(out_channels, 2048)
-        self.fc2 = nn.Linear(2048, nr_classes)
+        # self.fc1 = nn.Linear(out_channels, 2048)
+        # self.fc2 = nn.Linear(2048, nr_classes)
 
     def forward(self, x):
         x = self.conv5(x)
@@ -240,7 +240,11 @@ def modify_model(model):
     modify_conv(model, "x3dBlocks.5.conv5", "backbone.conv5.conv")
     modify_bn(model, "x3dBlocks.5.norm", "backbone.conv5.bn")
 
-    modify_conv(model, "x3dBlocks.5.fc1", "cls_head.fc1")
-    model["x3dBlocks.5.fc1.bias"] = torch.zeros(2048)
-    modify_conv(model, "x3dBlocks.5.fc2", "cls_head.fc2")
-    modify_key(model, "x3dBlocks.5.fc2.bias", "cls_head.fc2.bias")
+    model.pop("cls_head.fc1.weight")
+    model.pop("cls_head.fc2.weight")
+    model.pop("cls_head.fc2.bias")
+
+    # modify_conv(model, "x3dBlocks.5.fc1", "cls_head.fc1")
+    # model["x3dBlocks.5.fc1.bias"] = torch.zeros(2048)
+    # modify_conv(model, "x3dBlocks.5.fc2", "cls_head.fc2")
+    # modify_key(model, "x3dBlocks.5.fc2.bias", "cls_head.fc2.bias")
