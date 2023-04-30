@@ -77,6 +77,6 @@ class Conv2Plus1D(nn.Sequential):
 def i3d(pretrained=True, progress=False, **kwargs):
     model = I3D(in_channels=3)
     if pretrained:
-        model.load_state_dict(torch.load('rgb_imagenet.pt'))
+        model.load_state_dict(torch.load('/home/ubuntu/PycharmProjects/tsp/models/rgb_imagenet.pt'))
 
     return model
