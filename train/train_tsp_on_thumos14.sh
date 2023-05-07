@@ -4,8 +4,8 @@
 ########################## PARAMETERS THAT NEED TO BE SET ##########################
 ####################################################################################
 
-ROOT_DIR=
-NUM_GPUS=
+ROOT_DIR=/home/ubuntu/Desktop/thumos
+NUM_GPUS=1
 
 # Choose the appropriate batch size downscale factor for your GPU memory size
 # DOWNSCALE_FACTOR=1 --> a 32G memory GPU (default)
@@ -37,11 +37,11 @@ LABEL_COLUMNS="action-label temporal-region-label"
 LABEL_MAPPING_JSONS="../data/thumos14/thumos14_action_label_mapping.json \
                      ../data/thumos14/thumos14_temporal_region_label_mapping.json"
 LOSS_ALPHAS="1.0 1.0"
-GLOBAL_VIDEO_FEATURES=../data/thumos14/global_video_features/r2plus1d_34-max_gvf.h5
+GLOBAL_VIDEO_FEATURES=../data/thumos14/global_video_features/x3d-max_gvf.h5
 
 BACKBONE=x3d
 
-BATCH_SIZE=32
+BATCH_SIZE=8
 BACKBONE_LR=0.0001
 FC_LR=0.004
 
@@ -58,7 +58,7 @@ FC_LR=$(($FC_LR/$DOWNSCALE_FACTOR))
 source activate tsp
 mkdir -p $OUTPUT_DIR
 export OMP_NUM_THREADS=6
-
+export PYTHONPATH=/home/ubuntu/PycharmProjects/tsp/
 python -m torch.distributed.launch --nproc_per_node=$NUM_GPUS \
 --master_addr $MY_MASTER_ADDR --master_port $MY_MASTER_PORT --use_env \
 train.py \

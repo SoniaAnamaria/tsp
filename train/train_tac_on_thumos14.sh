@@ -4,8 +4,8 @@
 ########################## PARAMETERS THAT NEED TO BE SET ##########################
 ####################################################################################
 
-ROOT_DIR=
-NUM_GPUS=
+ROOT_DIR=/home/ubuntu/Desktop/thumos
+NUM_GPUS=1
 
 # Choose the appropriate batch size downscale factor for your GPU memory size
 # DOWNSCALE_FACTOR=1 --> a 32G memory GPU (default)
@@ -30,16 +30,16 @@ fi
 ####################################################################################
 
 TRAIN_SUBDIR=valid
-VALID_SUBDIR=test
+VALID_SUBDIR=testffffff
 TRAIN_CSV_FILENAME=../data/thumos14/thumos14_valid_tsp_groundtruth.csv
 VALID_CSV_FILENAME=../data/thumos14/thumos14_test_tsp_groundtruth.csv
 LABEL_COLUMNS=action-label
 LABEL_MAPPING_JSONS=../data/thumos14/thumos14_action_label_mapping.json
 LOSS_ALPHAS=1.0
 
-BACKBONE=r2plus1d_34
+BACKBONE=x3d
 
-BATCH_SIZE=32
+BATCH_SIZE=8
 BACKBONE_LR=0.00001
 FC_LR=0.002
 
@@ -49,14 +49,14 @@ MY_MASTER_ADDR=127.0.0.1
 MY_MASTER_PORT=$(shuf -i 30000-60000 -n 1)
 
 # downscaling
-BATCH_SIZE=$(bc <<< $BATCH_SIZE/$DOWNSCALE_FACTOR)
-BACKBONE_LR=$(bc -l <<< $BACKBONE_LR/$DOWNSCALE_FACTOR)
-FC_LR=$(bc -l <<< $FC_LR/$DOWNSCALE_FACTOR)
+BATCH_SIZE=$(($BATCH_SIZE/$DOWNSCALE_FACTOR))
+BACKBONE_LR=$(($BACKBONE_LR/$DOWNSCALE_FACTOR))
+FC_LR=$(($FC_LR/$DOWNSCALE_FACTOR))
 
 source activate tsp
 mkdir -p $OUTPUT_DIR
 export OMP_NUM_THREADS=6
-
+export PYTHONPATH=/home/ubuntu/PycharmProjects/tsp/
 python -m torch.distributed.launch --nproc_per_node=$NUM_GPUS \
 --master_addr $MY_MASTER_ADDR --master_port $MY_MASTER_PORT --use_env \
 train.py \

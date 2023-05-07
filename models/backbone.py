@@ -78,9 +78,9 @@ class Conv2Plus1D(nn.Sequential):
 def x3d(pretrained=True, progress=False, **kwargs):
     model = X3D()
     if pretrained:
-        state_dict = torch.load("x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth")
+        state_dict = torch.load("/home/ubuntu/PycharmProjects/tsp/models/x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth")
         modify_model(state_dict)
-        torch.save(state_dict, "x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth")
-        model.load_state_dict(torch.load('x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth'))
+        torch.save(state_dict, "/home/ubuntu/PycharmProjects/tsp/models/x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth")
+        model.load_state_dict(torch.load('/home/ubuntu/PycharmProjects/tsp/models/x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth'))
 
     return model
