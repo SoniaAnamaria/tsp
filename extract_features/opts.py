@@ -56,7 +56,7 @@ def parse_args():
     parser.add_argument('--stride', default=16, type=int,
                         help='Number of frames (after resampling with frame-rate) between consecutive clips (default: 16)')
 
-    parser.add_argument('--batch-size', default=16, type=int,
+    parser.add_argument('--batch-size', default=8, type=int,
                         help='Batch size per GPU (default: 32)')
     parser.add_argument('--workers', default=2, type=int,
                         help='Number of data loading workers (default: 6)')

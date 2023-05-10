@@ -7,7 +7,7 @@
 DATA_PATH=/home/ubuntu/Desktop/thumos/valid
 METADATA_CSV_FILENAME=/home/ubuntu/PycharmProjects/tsp/data/thumos14/thumos14_valid_metadata.csv
 
-LOCAL_CHECKPOINT=/home/ubuntu/Desktop/i3d-tsp_on_thumos14/backbone_lr_0.0001-fc_lr_0.004/epoch_7.pth
+LOCAL_CHECKPOINT=/home/ubuntu/PycharmProjects/tsp/train/output/i3d-tsp_on_thumos14/backbone_lr_0.0001-fc_lr_0.004/epoch_7.pth
 BACKBONE=i3d
 
 # Choose the stride between clips, e.g. 16 for non-overlapping clips and 1 for dense overlapping clips

@@ -38,9 +38,9 @@ def parse_args():
                         help='Frames-per-second rate at which the videos are sampled (default: 15)')
     parser.add_argument('--clips-per-segment', default=5, type=int,
                         help='Number of clips sampled per video segment (default: 5)')
-    parser.add_argument('--batch-size', default=32, type=int,
+    parser.add_argument('--batch-size', default=16, type=int,
                         help='Batch size per GPU (default: 32)')
-    parser.add_argument('--workers', default=6, type=int,
+    parser.add_argument('--workers', default=2, type=int,
                         help='Number of data loading workers (default: 6)')
 
     parser.add_argument('--epochs', default=8, type=int,
