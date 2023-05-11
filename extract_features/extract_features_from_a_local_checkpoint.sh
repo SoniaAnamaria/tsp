@@ -4,14 +4,14 @@
 ########################## PARAMETERS THAT NEED TO BE SET ##########################
 ####################################################################################
 
-DATA_PATH= # path/to/video/folder/
-METADATA_CSV_FILENAME= # path/to/metadata/csv/file. Use the ones provided in the data folder.
+DATA_PATH=/home/ubuntu/Desktop/thumos/test
+METADATA_CSV_FILENAME=/home/ubuntu/PycharmProjects/tsp/data/thumos14/thumos14_test_metadata.csv
 
-LOCAL_CHECKPOINT= # path/to/local/checkpoint/file.pth
-BACKBONE= # Set the backbone used in the LOCAL_CHECKPOINT: r2plus1d_34, r2plus1d_18, or r3d_18
+LOCAL_CHECKPOINT=/home/ubuntu/PycharmProjects/tsp/train/output/r2plus1d_34-tsp_on_thumos14/backbone_lr_0.0001-fc_lr_0.004/epoch_7.pth
+BACKBONE=r2plus1d_34
 
 # Choose the stride between clips, e.g. 16 for non-overlapping clips and 1 for dense overlapping clips
-STRIDE=16 
+STRIDE=1
 
 # Optional: Split the videos into multiple shards for parallel feature extraction
 # Increase the number of shards and run this script independently on separate GPU devices,
@@ -53,7 +53,7 @@ OUTPUT_DIR=output/local_checkpoint_${BACKBONE}_features/stride_${STRIDE}/
 
 source activate tsp
 mkdir -p $OUTPUT_DIR
-
+export PYTHONPATH=/home/ubuntu/PycharmProjects/tsp
 python extract_features.py \
 --data-path $DATA_PATH \
 --metadata-csv-filename $METADATA_CSV_FILENAME \
