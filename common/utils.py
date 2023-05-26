@@ -1,26 +1,28 @@
-from collections import defaultdict, deque
 import datetime
+import os
 import time
+from collections import defaultdict, deque
+
 import torch
 import torch.distributed as dist
 
-import errno
-import os
-
 
 class SmoothedValue(object):
-    """
-    Track a series of values and provide access to smoothed values over a
-    window or the global series average.
-    """
-
     def __init__(self, window_size=20, fmt=None):
         if fmt is None:
             fmt = '{global_avg:.2f}'
         self.deque = deque(maxlen=window_size)
-        self.total = 0.0
         self.count = 0
+        self.total = 0.0
         self.fmt = fmt
+
+    def __str__(self):
+        return self.fmt.format(
+            median=self.median,
+            avg=self.avg,
+            global_avg=self.global_avg,
+            max=self.max,
+            value=self.value)
 
     def update(self, value, n=1):
         self.deque.append(value)
@@ -28,10 +30,7 @@ class SmoothedValue(object):
         self.total += value * n
 
     def synchronize_between_processes(self):
-        """
-        Warning: does not synchronize the deque!
-        """
-        if not is_dist_avail_and_initialized():
+        if not is_dist_available_and_initialized():
             return
         t = torch.tensor([self.count, self.total], dtype=torch.float64, device='cuda')
         dist.barrier()
@@ -42,13 +41,11 @@ class SmoothedValue(object):
 
     @property
     def median(self):
-        d = torch.tensor(list(self.deque))
-        return d.median().item()
+        return torch.tensor(list(self.deque)).median().item()
 
     @property
     def avg(self):
-        d = torch.tensor(list(self.deque), dtype=torch.float32)
-        return d.mean().item()
+        return torch.tensor(list(self.deque), dtype=torch.float32).mean().item()
 
     @property
     def global_avg(self):
@@ -62,26 +59,17 @@ class SmoothedValue(object):
     def value(self):
         return self.deque[-1]
 
-    def __str__(self):
-        return self.fmt.format(
-            median=self.median,
-            avg=self.avg,
-            global_avg=self.global_avg,
-            max=self.max,
-            value=self.value)
-
 
 class MetricLogger(object):
     def __init__(self, delimiter='\t'):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
 
-    def update(self, **kwargs):
-        for k, v in kwargs.items():
-            if isinstance(v, torch.Tensor):
-                v = v.item()
-            assert isinstance(v, (float, int))
-            self.meters[k].update(v)
+    def __str__(self):
+        loss_str = []
+        for name, meter in self.meters.items():
+            loss_str.append(f'{name}: {str(meter)}')
+        return self.delimiter.join(loss_str)
 
     def __getattr__(self, attr):
         if attr in self.meters:
@@ -90,13 +78,12 @@ class MetricLogger(object):
             return self.__dict__[attr]
         raise AttributeError(f'"{type(self).__name__}" object has no attribute "{attr}"')
 
-    def __str__(self):
-        loss_str = []
-        for name, meter in self.meters.items():
-            loss_str.append(
-                f'{name}: {str(meter)}'
-            )
-        return self.delimiter.join(loss_str)
+    def update(self, **kwargs):
+        for k, v in kwargs.items():
+            if isinstance(v, torch.Tensor):
+                v = v.item()
+            assert isinstance(v, (float, int))
+            self.meters[k].update(v)
 
     def synchronize_between_processes(self):
         for meter in self.meters.values():
@@ -105,13 +92,11 @@ class MetricLogger(object):
     def add_meter(self, name, meter):
         self.meters[name] = meter
 
-    def log_every(self, iterable, print_freq, header=None, device=None):
+    def log_every(self, iterable, print_freq, header, device):
         i = 0
-        if not header:
-            header = ''
         start_time = time.time()
-        end = time.time()
-        iter_time = SmoothedValue(fmt='{avg:.2f}')
+        end_time = time.time()
+        iteration_time = SmoothedValue(fmt='{avg:.2f}')
         data_time = SmoothedValue(fmt='{avg:.2f}')
         space_fmt = ':' + str(len(str(len(iterable)))) + 'd'
         if torch.cuda.is_available():
@@ -135,61 +120,44 @@ class MetricLogger(object):
             ])
         GB = 1024.0 ** 3
         for obj in iterable:
-            data_time.update(time.time() - end)
+            data_time.update(time.time() - end_time)
             yield obj
-            iter_time.update(time.time() - end)
+            iteration_time.update(time.time() - end_time)
             if i % print_freq == 0:
-                eta_seconds = iter_time.global_avg * (len(iterable) - i)
+                eta_seconds = iteration_time.global_avg * (len(iterable) - i)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
                 if torch.cuda.is_available():
                     print(log_msg.format(
-                        i, len(iterable), eta=eta_string,
-                        meters=str(self),
-                        time=str(iter_time), data=str(data_time),
+                        i, len(iterable), eta=eta_string, meters=str(self),
+                        time=str(iteration_time), data=str(data_time),
                         memory=torch.cuda.max_memory_allocated(device) / GB), flush=True)
                 else:
                     print(log_msg.format(
-                        i, len(iterable), eta=eta_string,
-                        meters=str(self),
-                        time=str(iter_time), data=str(data_time)), flush=True)
+                        i, len(iterable), eta=eta_string, meters=str(self),
+                        time=str(iteration_time), data=str(data_time)), flush=True)
             i += 1
-            end = time.time()
+            end_time = time.time()
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
         print(f'{header} total time: {total_time_str}\n')
 
 
-def accuracy(output, target, topk=(1,)):
-    """
-    Computes the accuracy over the k top predictions for the specified values of k
-    """
+def accuracy(output, target, top_k=(1,)):
     with torch.no_grad():
-        maxk = max(topk)
+        max_k = max(top_k)
         batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)
+        _, pred = output.topk(max_k, 1, True, True)
         pred = pred.t()
-        correct = pred.eq(target[None])
+        correct = pred.eq(target.unsqueeze(1))
 
         res = []
-        for k in topk:
+        for k in top_k:
             correct_k = correct[:k].flatten().sum(dtype=torch.float32)
             res.append(correct_k * (100.0 / batch_size))
         return res
 
 
-def mkdir(path):
-    try:
-        os.makedirs(path)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-
-
 def setup_for_distributed(is_master):
-    """
-    This function disables printing when not in master process
-    """
     import builtins as __builtin__
     builtin_print = __builtin__.print
 
@@ -201,24 +169,16 @@ def setup_for_distributed(is_master):
     __builtin__.print = print
 
 
-def is_dist_avail_and_initialized():
-    if not dist.is_available():
-        return False
-    if not dist.is_initialized():
-        return False
-    return True
-
-
-def get_world_size():
-    if not is_dist_avail_and_initialized():
-        return 1
-    return dist.get_world_size()
+def is_dist_available_and_initialized():
+    if dist.is_available() and dist.is_initialized():
+        return True
+    return False
 
 
 def get_rank():
-    if not is_dist_avail_and_initialized():
-        return 0
-    return dist.get_rank()
+    if is_dist_available_and_initialized():
+        return dist.get_rank()
+    return 0
 
 
 def is_main_process():
@@ -232,8 +192,8 @@ def save_on_master(*args, **kwargs):
 
 def write_to_file_on_master(file, mode, content_to_write):
     if is_main_process():
-        with open(file, mode) as fobj:
-            fobj.write(content_to_write)
+        with open(file, mode) as f:
+            f.write(content_to_write)
 
 
 def init_distributed_mode(args):
@@ -252,7 +212,6 @@ def init_distributed_mode(args):
         return
 
     args.distributed = True
-
     torch.cuda.set_device(args.gpu)
     args.dist_backend = 'nccl'
     print(f'| distributed init (rank {args.rank}): {args.dist_url}', flush=True)

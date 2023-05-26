@@ -1,11 +1,11 @@
 from __future__ import division, print_function
 
 import argparse
-import pickle as pkl
-import h5py
 import glob
 import os
+import pickle as pkl
 
+import h5py
 from tqdm import tqdm
 
 
@@ -16,10 +16,10 @@ def main(args):
     print(f'Number of pkl files: {len(filenames)}')
 
     output = h5py.File(args.output_h5, 'w')
-    for f in tqdm(filenames):
-        video_name = os.path.basename(f).split('.pkl')[0]
-        with open(f, 'rb') as fobj:
-            data = pkl.load(fobj)
+    for file in tqdm(filenames):
+        video_name = os.path.basename(file).split('.pkl')[0]
+        with open(file, 'rb') as f:
+            data = pkl.load(f)
         output.create_dataset(video_name, data=data, chunks=True, **compression_flags)
 
     output.close()

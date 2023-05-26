@@ -1,9 +1,5 @@
 #!/bin/bash -i
 
-####################################################################################
-########################## PARAMETERS THAT NEED TO BE SET ##########################
-####################################################################################
-
 ROOT_DIR=
 NUM_GPUS=
 
@@ -25,10 +21,6 @@ if [ -z "$NUM_GPUS" ]; then
     exit 1
 fi
 
-####################################################################################
-############################# PARAMETERS TO KEEP AS IS #############################
-####################################################################################
-
 TRAIN_SUBDIR=valid
 VALID_SUBDIR=test
 TRAIN_CSV_FILENAME=../data/thumos14/thumos14_valid_tsp_groundtruth.csv
@@ -48,7 +40,6 @@ OUTPUT_DIR=output/${BACKBONE}-tac_on_thumos14/backbone_lr_${BACKBONE_LR}-fc_lr_$
 MY_MASTER_ADDR=127.0.0.1
 MY_MASTER_PORT=$(shuf -i 30000-60000 -n 1)
 
-# downscaling
 BATCH_SIZE=$(bc <<< $BATCH_SIZE/$DOWNSCALE_FACTOR)
 BACKBONE_LR=$(bc -l <<< $BACKBONE_LR/$DOWNSCALE_FACTOR)
 FC_LR=$(bc -l <<< $FC_LR/$DOWNSCALE_FACTOR)
@@ -56,6 +47,7 @@ FC_LR=$(bc -l <<< $FC_LR/$DOWNSCALE_FACTOR)
 source activate tsp
 mkdir -p $OUTPUT_DIR
 export OMP_NUM_THREADS=6
+export PYTHONPATH=/home/ubuntu/PycharmProjects/tsp/
 
 python -m torch.distributed.launch --nproc_per_node=$NUM_GPUS \
 --master_addr $MY_MASTER_ADDR --master_port $MY_MASTER_PORT --use_env \

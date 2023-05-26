@@ -59,6 +59,7 @@ source activate tsp
 mkdir -p $OUTPUT_DIR
 export OMP_NUM_THREADS=6
 export PYTHONPATH=/home/ubuntu/PycharmProjects/tsp/
+
 python -m torch.distributed.launch --nproc_per_node=$NUM_GPUS \
 --master_addr $MY_MASTER_ADDR --master_port $MY_MASTER_PORT --use_env \
 train.py \

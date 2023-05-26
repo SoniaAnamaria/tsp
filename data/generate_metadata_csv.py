@@ -1,12 +1,12 @@
 from __future__ import division, print_function
 
 import argparse
-import os
 import glob
-import pandas as pd
+import os
 
-from torchvision.io import read_video_timestamps
+import pandas as pd
 from joblib import Parallel, delayed
+from torchvision.io import read_video_timestamps
 
 
 def get_video_stats(filename):
@@ -27,15 +27,9 @@ def get_video_stats(filename):
 
 def main(args):
     print(args)
-
     filenames = glob.glob(os.path.join(args.video_folder, f'*.{args.ext}'))
     print(f'Number of video files: {len(filenames)}')
-
-    all_stats = Parallel(n_jobs=args.workers)(
-        delayed(get_video_stats)(
-            filename=filename,
-        ) for filename in filenames)
-
+    all_stats = Parallel(n_jobs=args.workers)(delayed(get_video_stats)(filename=filename, ) for filename in filenames)
     df = pd.DataFrame(all_stats)
     df.to_csv(args.output_csv, index=False)
     print(f'Saved metadata to {args.output_csv}')

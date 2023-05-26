@@ -1,16 +1,10 @@
 #!/bin/bash
-#
-# Script to convert all videos in <input_folder> to mp4 videos with constant frame rate of 30fps.
-# The output videos are saved in <output_folder>.
-#
-# usage: bash standardize_video_to_constant_30fps_mp4.sh <input_folder> <output_folder>
 
 if [ "$#" -ne 2 ]; then
     echo "Illegal number of parameters"
     echo "usage: bash standardize_video_to_constant_30fps_mp4.sh <input_folder> <output_folder>"
     exit 1
 fi
-
 
 INPUT_FOLDER=$1
 OUTPUT_FOLDER=$2
