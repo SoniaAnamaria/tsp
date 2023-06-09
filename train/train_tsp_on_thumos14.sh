@@ -5,7 +5,6 @@
 ####################################################################################
 
 ROOT_DIR=/home/ubuntu/Desktop/thumos
-NUM_GPUS=1
 
 # Choose the appropriate batch size downscale factor for your GPU memory size
 # DOWNSCALE_FACTOR=1 --> a 32G memory GPU (default)
@@ -20,10 +19,6 @@ if [ -z "$ROOT_DIR" ]; then
     exit 1
 fi
 
-if [ -z "$NUM_GPUS" ]; then
-    echo "NUM_GPUS variable is not set."
-    exit 1
-fi
 
 ####################################################################################
 ############################# PARAMETERS TO KEEP AS IS #############################
@@ -60,9 +55,7 @@ mkdir -p $OUTPUT_DIR
 export OMP_NUM_THREADS=6
 export PYTHONPATH=/home/ubuntu/PycharmProjects/tsp/
 
-python -m torch.distributed.launch --nproc_per_node=$NUM_GPUS \
---master_addr $MY_MASTER_ADDR --master_port $MY_MASTER_PORT --use_env \
-train.py \
+python train.py \
 --root-dir $ROOT_DIR \
 --train-subdir $TRAIN_SUBDIR \
 --valid-subdir $VALID_SUBDIR \

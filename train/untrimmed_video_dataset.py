@@ -12,7 +12,7 @@ from torchvision.io import read_video
 
 class UntrimmedVideoDataset(Dataset):
     def __init__(self, csv_filename, root_dir, clip_length, frame_rate, clips_per_segment, temporal_jittering,
-                 label_columns, label_mappings, seed=42, transforms=None, global_video_features=None, debug=False):
+                 label_columns, label_mappings, seed=42, transforms=None, global_video_features=None):
         df = UntrimmedVideoDataset._clean_df_and_remove_short_segments(pd.read_csv(csv_filename), clip_length,
                                                                        frame_rate)
         self.df = UntrimmedVideoDataset._append_root_dir_to_filenames_and_check_files_exist(df, root_dir)
@@ -28,11 +28,8 @@ class UntrimmedVideoDataset(Dataset):
         for label_column, label_mapping in zip(label_columns, label_mappings):
             self.df[label_column] = self.df[label_column].map(lambda x: -1 if pd.isnull(x) else label_mapping[x])
         self.global_video_features = global_video_features
-        self.debug = debug
 
     def __len__(self):
-        if self.debug:
-            return 100
         return len(self.df) * self.clips_per_segment
 
     def __getitem__(self, idx):
@@ -42,9 +39,9 @@ class UntrimmedVideoDataset(Dataset):
         if self.temporal_jittering:
             ratio = self.rng.uniform()
         else:
-            ratio = self.uniform_sampling[idx // len(self.df)]
+             ratio = self.uniform_sampling[idx // len(self.df)]
         clip_t_start = t_start + ratio * (t_end - t_start - self.clip_length / self.frame_rate)
-        clip_t_end = clip_t_start +  self.clip_length / self.frame_rate
+        clip_t_end = clip_t_start + self.clip_length / self.frame_rate
 
         frames, _, _ = read_video(filename=filename, start_pts=clip_t_start, end_pts=clip_t_end, pts_unit='sec')
         idx = UntrimmedVideoDataset._resample_video_idx(self.clip_length, fps, self.frame_rate)

@@ -6,8 +6,6 @@ LOCAL_CHECKPOINT=/home/ubuntu/PycharmProjects/tsp/train/output/r2plus1d_34-tsp_o
 
 BACKBONE=r2plus1d_34
 STRIDE=1
-SHARD_ID=0
-NUM_SHARDS=1
 DEVICE=cuda:0
 
 if [ -z "$DATA_PATH" ]; then
@@ -46,7 +44,5 @@ python extract_features.py \
 --local-checkpoint $LOCAL_CHECKPOINT \
 --backbone $BACKBONE \
 --stride $STRIDE \
---shard-id $SHARD_ID \
---num-shards $NUM_SHARDS \
 --device $DEVICE \
 --output-dir $OUTPUT_DIR

@@ -10,7 +10,6 @@ from itertools import chain
 import numpy as np
 import torch
 import torchvision
-from torchvision.datasets.samplers import DistributedSampler
 
 from common import transforms as T
 from common import utils
@@ -34,13 +33,15 @@ def compute_accuracies_and_log_metrics(metric_logger, loss, outputs, targets, he
 
 def write_metrics_results_to_file(metric_logger, epoch, label_columns, output_dir):
     results = f'** Valid Epoch {epoch}: '
+    accuracies = []
     for label_column in label_columns:
         results += f' <{label_column}> Accuracy {metric_logger.meters[f"acc_{label_column}"].global_avg:.3f}'
         results += f' Loss {metric_logger.meters[f"loss_{label_column}"].global_avg:.3f};'
+        accuracies.append(metric_logger.meters[f'acc_{label_column}'].global_avg)
     results += f' Total Loss {metric_logger.meters["loss"].global_avg:.3f}'
-    avg_acc = np.average([metric_logger.meters[f'acc_{label_column}'].global_avg for label_column in label_columns])
+    avg_acc = np.average(accuracies)
     results += f' Avg Accuracy {avg_acc:.3f}\n'
-    utils.write_to_file_on_master(file=os.path.join(output_dir, 'results.txt'), mode='a', content_to_write=results)
+    utils.write_to_file(file=os.path.join(output_dir, 'results.txt'), mode='a', content_to_write=results)
     return results
 
 
@@ -106,14 +107,12 @@ def evaluate(model, criterion, data_loader, device, epoch, print_freq, label_col
                 loss += alpha * head_loss
 
             compute_accuracies_and_log_metrics(metric_logger, loss, outputs, targets, head_losses, label_columns)
-    metric_logger.synchronize_between_processes()
     results = write_metrics_results_to_file(metric_logger, epoch, label_columns, output_dir)
     print(results)
 
 
 def main(args):
     print(args)
-    utils.init_distributed_mode(args)
     print('TORCH VERSION: ', torch.__version__)
     print('TORCHVISION VERSION: ', torchvision.__version__)
     torch.backends.cudnn.benchmark = True
@@ -146,8 +145,7 @@ def main(args):
         transforms=transform_train,
         label_columns=args.label_columns,
         label_mappings=label_mappings,
-        global_video_features=args.global_video_features,
-        debug=args.debug)
+        global_video_features=args.global_video_features)
     transform_valid = torchvision.transforms.Compose([
         T.ToFloatTensorInZeroOne(),
         T.Resize((128, 171)),
@@ -165,23 +163,14 @@ def main(args):
         transforms=transform_valid,
         label_columns=args.label_columns,
         label_mappings=label_mappings,
-        global_video_features=args.global_video_features,
-        debug=args.debug)
+        global_video_features=args.global_video_features)
 
     print('CREATING DATA LOADERS')
-    if args.distributed:
-        sampler_train = DistributedSampler(dataset_train, shuffle=True)
-        sampler_valid = DistributedSampler(dataset_valid, shuffle=False)
-    else:
-        sampler_train = None
-        sampler_valid = None
-    data_loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size,
-                                                    shuffle=(sampler_train is None), sampler=sampler_train,
-                                                    num_workers=args.workers, pin_memory=True)
+    data_loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True,
+                                                    sampler=None, num_workers=args.workers, pin_memory=True)
 
     data_loader_valid = torch.utils.data.DataLoader(dataset_valid, batch_size=args.batch_size, shuffle=False,
-                                                    sampler=sampler_valid,
-                                                    num_workers=args.workers, pin_memory=True)
+                                                    sampler=None, num_workers=args.workers, pin_memory=True)
 
     print('CREATING MODEL')
     cls = []
@@ -190,8 +179,6 @@ def main(args):
     model = Model(backbone=args.backbone, num_classes=cls, num_heads=len(args.label_columns),
                   concat_gvf=args.global_video_features is not None)
     model.to(device)
-    if args.distributed and args.sync_bn:
-        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)
     backbone_params = chain(model.features.layer1.parameters(),
                             model.features.layer2.parameters(),
@@ -202,8 +189,8 @@ def main(args):
     else:
         fc_params = chain(model.fc1.parameters(), model.fc2.parameters())
     params = [{'params': model.features.stem.parameters(), 'lr': 0, 'name': 'stem'},
-              {'params': backbone_params, 'lr': args.backbone_lr * args.world_size, 'name': 'backbone'},
-              {'params': fc_params, 'lr': args.fc_lr * args.world_size, 'name': 'fc'}]
+              {'params': backbone_params, 'lr': args.backbone_lr, 'name': 'backbone'},
+              {'params': fc_params, 'lr': args.fc_lr, 'name': 'fc'}]
     optimizer = torch.optim.SGD(params, momentum=args.momentum, weight_decay=args.weight_decay)
     warmup_iters = args.lr_warmup_epochs * len(data_loader_train)
     lr_milestones = []
@@ -211,51 +198,31 @@ def main(args):
         lr_milestones.append(len(data_loader_train) * m)
     lr_scheduler = WarmupMultiStepLR(optimizer, milestones=lr_milestones, gamma=args.lr_gamma,
                                      warmup_iters=warmup_iters, warmup_factor=1e-5)
-    model_without_ddp = model
-    if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-        model_without_ddp = model.module
     if args.resume:
         print(f'Resuming from checkpoint {args.resume}')
         checkpoint = torch.load(args.resume, map_location='cpu')
-        model_without_ddp.load_state_dict(checkpoint['model'])
+        model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
         args.start_epoch = checkpoint['epoch'] + 1
 
-    if args.valid_only:
-        if args.resume:
-            epoch = args.start_epoch - 1
-        else:
-            epoch = args.start_epoch
-        evaluate(model=model, criterion=criterion, data_loader=data_loader_valid, device=device, epoch=epoch,
-                 print_freq=args.print_freq, label_columns=args.label_columns, loss_alphas=args.loss_alphas,
-                 output_dir=args.output_dir)
-        return
-
     print('START TRAINING')
     start_time = time.time()
     for epoch in range(args.start_epoch, args.epochs):
-        if args.distributed:
-            sampler_train.set_epoch(epoch)
-            sampler_valid.set_epoch(epoch)
         train_one_epoch(model=model, criterion=criterion, optimizer=optimizer, lr_scheduler=lr_scheduler,
                         data_loader=data_loader_train, device=device, epoch=epoch, print_freq=args.print_freq,
                         label_columns=args.label_columns, loss_alphas=args.loss_alphas)
         if args.output_dir:
-            checkpoint = {'model': model_without_ddp.state_dict(),
+            checkpoint = {'model': model.state_dict(),
                           'optimizer': optimizer.state_dict(),
                           'lr_scheduler': lr_scheduler.state_dict(),
                           'epoch': epoch,
                           'args': args}
-            utils.save_on_master(checkpoint, os.path.join(args.output_dir, f'epoch_{epoch}.pth'))
-            utils.save_on_master(checkpoint, os.path.join(args.output_dir, 'checkpoint.pth'))
-        if args.train_only_one_epoch:
-            break
-        else:
-            evaluate(model=model, criterion=criterion, data_loader=data_loader_valid, device=device, epoch=epoch,
-                     print_freq=args.print_freq, label_columns=args.label_columns, loss_alphas=args.loss_alphas,
-                     output_dir=args.output_dir)
+            torch.save(checkpoint, os.path.join(args.output_dir, f'epoch_{epoch}.pth'))
+            torch.save(checkpoint, os.path.join(args.output_dir, 'checkpoint.pth'))
+        evaluate(model=model, criterion=criterion, data_loader=data_loader_valid, device=device, epoch=epoch,
+                 print_freq=args.print_freq, label_columns=args.label_columns, loss_alphas=args.loss_alphas,
+                 output_dir=args.output_dir)
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print(f'Training time {total_time_str}')

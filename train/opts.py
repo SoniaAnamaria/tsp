@@ -60,11 +60,6 @@ def parse_args():
     parser.add_argument('--weight-decay', default=0.005, type=float,
                         help='Weight decay')
 
-    parser.add_argument('--valid-only', action='store_true',
-                        help='Test the model on the validation subset and exit')
-    parser.add_argument('--train-only-one-epoch', action='store_true',
-                        help='Train the model for only one epoch without testing on validation subset')
-
     parser.add_argument('--print-freq', default=100, type=int,
                         help='Print frequency in number of batches')
     parser.add_argument('--output-dir', required=True,
@@ -74,13 +69,6 @@ def parse_args():
     parser.add_argument('--start-epoch', default=0, type=int,
                         help='Start epoch')
 
-    parser.add_argument('--dist-url', default='env://',
-                        help='URL used to set up distributed training')
-    parser.add_argument('--sync-bn', action='store_true',
-                        help='Use sync batch norm')
-    parser.add_argument('--debug', action='store_true',
-                        help='Run the training over 100 samples only with batch size of 4')
-
     args = parser.parse_args()
 
     assert len(args.label_columns) == len(args.label_mapping_jsons) and len(args.label_columns) == len(
@@ -88,10 +76,5 @@ def parse_args():
         (f'The parameters label-columns, label-mapping-jsons, and loss-alphas must have the same length. '
          f'Got len(label-columns)={len(args.label_columns)}, len(label-mapping-jsons)={len(args.label_mapping_jsons)}, '
          f'and len(loss-alphas)={len(args.loss_alphas)}')
-
-    if args.debug:
-        print('####### DEBUG MODE #######')
-        args.batch_size = 4
-        args.print_freq = 4
 
     return args

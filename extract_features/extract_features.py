@@ -44,11 +44,6 @@ def main(args):
         T.CenterCrop((112, 112))
     ])
     metadata_df = pd.read_csv(args.metadata_csv_filename)
-    shards = np.linspace(0, len(metadata_df), args.num_shards + 1).astype(int)
-    start_idx, end_idx = shards[args.shard_id], shards[args.shard_id + 1]
-    print(f'shard-id: {args.shard_id + 1} out of {args.num_shards}, '
-          f'total number of videos: {len(metadata_df)}, shard size {end_idx - start_idx} videos')
-    metadata_df = metadata_df.iloc[start_idx:end_idx].reset_index()
     metadata_df['is-computed-already'] = metadata_df['filename'].map(
         lambda f: os.path.exists(os.path.join(args.output_dir, os.path.basename(f).split('.')[0] + '.pkl')))
     metadata_df = metadata_df[metadata_df['is-computed-already'] is False].reset_index(drop=True)

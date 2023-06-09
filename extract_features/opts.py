@@ -33,10 +33,6 @@ def parse_args():
 
     parser.add_argument('--output-dir', required=True,
                         help='Path for saving features')
-    parser.add_argument('--shard-id', default=0, type=int,
-                        help='Shard id number. Must be between [0, num-shards)')
-    parser.add_argument('--num-shards', default=1, type=int,
-                        help='Number of shards to split the metadata-csv-filename')
 
     args = parser.parse_args()
 

@@ -1,10 +1,8 @@
 import datetime
-import os
 import time
 from collections import defaultdict, deque
 
 import torch
-import torch.distributed as dist
 
 
 class SmoothedValue(object):
@@ -18,30 +16,14 @@ class SmoothedValue(object):
 
     def __str__(self):
         return self.fmt.format(
-            median=self.median,
             avg=self.avg,
             global_avg=self.global_avg,
-            max=self.max,
             value=self.value)
 
     def update(self, value, n=1):
         self.deque.append(value)
         self.count += n
         self.total += value * n
-
-    def synchronize_between_processes(self):
-        if not is_dist_available_and_initialized():
-            return
-        t = torch.tensor([self.count, self.total], dtype=torch.float64, device='cuda')
-        dist.barrier()
-        dist.all_reduce(t)
-        t = t.tolist()
-        self.count = int(t[0])
-        self.total = t[1]
-
-    @property
-    def median(self):
-        return torch.tensor(list(self.deque)).median().item()
 
     @property
     def avg(self):
@@ -50,10 +32,6 @@ class SmoothedValue(object):
     @property
     def global_avg(self):
         return self.total / self.count
-
-    @property
-    def max(self):
-        return max(self.deque)
 
     @property
     def value(self):
@@ -80,14 +58,8 @@ class MetricLogger(object):
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
-            if isinstance(v, torch.Tensor):
-                v = v.item()
             assert isinstance(v, (float, int))
             self.meters[k].update(v)
-
-    def synchronize_between_processes(self):
-        for meter in self.meters.values():
-            meter.synchronize_between_processes()
 
     def add_meter(self, name, meter):
         self.meters[name] = meter
@@ -157,64 +129,6 @@ def accuracy(output, target, top_k=(1,)):
         return res
 
 
-def setup_for_distributed(is_master):
-    import builtins as __builtin__
-    builtin_print = __builtin__.print
-
-    def print(*args, **kwargs):
-        force = kwargs.pop('force', False)
-        if is_master or force:
-            builtin_print(*args, **kwargs)
-
-    __builtin__.print = print
-
-
-def is_dist_available_and_initialized():
-    if dist.is_available() and dist.is_initialized():
-        return True
-    return False
-
-
-def get_rank():
-    if is_dist_available_and_initialized():
-        return dist.get_rank()
-    return 0
-
-
-def is_main_process():
-    return get_rank() == 0
-
-
-def save_on_master(*args, **kwargs):
-    if is_main_process():
-        torch.save(*args, **kwargs)
-
-
-def write_to_file_on_master(file, mode, content_to_write):
-    if is_main_process():
-        with open(file, mode) as f:
-            f.write(content_to_write)
-
-
-def init_distributed_mode(args):
-    if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
-        args.rank = int(os.environ['RANK'])
-        args.world_size = int(os.environ['WORLD_SIZE'])
-        args.gpu = int(os.environ['LOCAL_RANK'])
-        if args.world_size == 1:
-            print('Not using distributed mode')
-            args.distributed = False
-            return
-    else:
-        print('Not using distributed mode')
-        args.distributed = False
-        args.world_size = 1
-        return
-
-    args.distributed = True
-    torch.cuda.set_device(args.gpu)
-    args.dist_backend = 'nccl'
-    print(f'| distributed init (rank {args.rank}): {args.dist_url}', flush=True)
-    torch.distributed.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
-                                         world_size=args.world_size, rank=args.rank)
-    setup_for_distributed(args.rank == 0)
+def write_to_file(file, mode, content_to_write):
+    with open(file, mode) as f:
+        f.write(content_to_write)
