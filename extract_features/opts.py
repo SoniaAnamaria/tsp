@@ -10,9 +10,9 @@ def parse_args():
                         help='Path to the metadata CSV file')
 
     parser.add_argument('--backbone', default='r2plus1d_34',
-                        choices=['r2plus1d_34', 'r2plus1d_18', 'r3d_18'],
+                        choices=['r2plus1d_34', 'i3d', 'x3d'],
                         help='Encoder backbone architecture. '
-                             'Supported backbones are r2plus1d_34, r2plus1d_18, and r3d_18')
+                             'Supported backbones are r2plus1d_34, i3d and x3d')
     parser.add_argument('--device', default='cuda',
                         help='Device to train on')
 

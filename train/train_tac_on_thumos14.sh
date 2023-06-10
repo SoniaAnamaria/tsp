@@ -2,12 +2,6 @@
 
 ROOT_DIR=
 
-# Choose the appropriate batch size downscale factor for your GPU memory size
-# DOWNSCALE_FACTOR=1 --> a 32G memory GPU (default)
-# DOWNSCALE_FACTOR=2 --> a 16G memory GPU
-# DOWNSCALE_FACTOR=4 --> a 8G memory GPU
-DOWNSCALE_FACTOR=1
-
 if [ -z "$ROOT_DIR" ]; then
     echo "ROOT_DIR variable is not set."
     echo "Please set ROOT_DIR to the location of the THUMOS14 videos."
@@ -33,10 +27,6 @@ OUTPUT_DIR=output/${BACKBONE}-tac_on_thumos14/backbone_lr_${BACKBONE_LR}-fc_lr_$
 
 MY_MASTER_ADDR=127.0.0.1
 MY_MASTER_PORT=$(shuf -i 30000-60000 -n 1)
-
-BATCH_SIZE=$(bc <<< $BATCH_SIZE/$DOWNSCALE_FACTOR)
-BACKBONE_LR=$(bc -l <<< $BACKBONE_LR/$DOWNSCALE_FACTOR)
-FC_LR=$(bc -l <<< $FC_LR/$DOWNSCALE_FACTOR)
 
 source activate tsp
 mkdir -p $OUTPUT_DIR

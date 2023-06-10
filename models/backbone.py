@@ -1,11 +1,9 @@
 import torch
 import torch.nn as nn
 
-from torchvision.models.video import r2plus1d_18 as _r2plus1d_18
-from torchvision.models.video import r3d_18 as _r3d_18
 from torchvision.models.video.resnet import VideoResNet, R2Plus1dStem, BasicBlock
 
-__all__ = ['r2plus1d_34', 'r2plus1d_18', 'r3d_18']
+__all__ = ['r2plus1d_34']
 
 R2PLUS1D_34_MODEL_URL = "https://github.com/moabitcoin/ig65m-pytorch/releases/download/v1.0.0/r2plus1d_34_clip8_ft_kinetics_from_ig65m-0aa0550b.pth"
 
@@ -32,14 +30,6 @@ def r2plus1d_34(pretrained=True, progress=False, **kwargs):
         model.load_state_dict(state_dict)
 
     return model
-
-
-def r2plus1d_18(pretrained=True, progress=False, **kwargs):
-    return _r2plus1d_18(pretrained=pretrained, progress=progress, **kwargs)
-
-
-def r3d_18(pretrained=True, progress=False, **kwargs):
-    return _r3d_18(pretrained=pretrained, progress=progress, **kwargs)
 
 
 class Conv2Plus1D(nn.Sequential):

@@ -1,15 +1,7 @@
 #!/bin/bash -i
 
-####################################################################################
-########################## PARAMETERS THAT NEED TO BE SET ##########################
-####################################################################################
-
 ROOT_DIR=/home/ubuntu/Desktop/thumos
 
-# Choose the appropriate batch size downscale factor for your GPU memory size
-# DOWNSCALE_FACTOR=1 --> a 32G memory GPU (default)
-# DOWNSCALE_FACTOR=2 --> a 16G memory GPU
-# DOWNSCALE_FACTOR=4 --> a 8G memory GPU
 DOWNSCALE_FACTOR=1
 
 if [ -z "$ROOT_DIR" ]; then

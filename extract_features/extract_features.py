@@ -3,7 +3,6 @@ from __future__ import division, print_function
 import os
 import sys
 
-import numpy as np
 import pandas as pd
 import torch
 import torchvision
