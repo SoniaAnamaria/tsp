@@ -213,6 +213,12 @@ def main(args):
                                 model.features.Mixed_4f.parameters(),
                                 model.features.Mixed_5b.parameters(),
                                 model.features.Mixed_5c.parameters())
+    elif args.backbone == 'x3d':
+        backbone_params = chain(model.features.x3dBlocks[1].parameters(),
+                                model.features.x3dBlocks[2].parameters(),
+                                model.features.x3dBlocks[3].parameters(),
+                                model.features.x3dBlocks[4].parameters(),
+                                model.features.x3dBlocks[5].parameters())
     else:
         backbone_params = chain(model.features.layer1.parameters(),
                                 model.features.layer2.parameters(),
@@ -226,6 +232,12 @@ def main(args):
 
     if args.backbone == 'i3d':
         params = [
+            {'params': backbone_params, 'lr': args.backbone_lr, 'name': 'backbone'},
+            {'params': fc_params, 'lr': args.fc_lr, 'name': 'fc'}
+        ]
+    elif args.backbone == 'x3d':
+        params = [
+            {'params': model.features.x3dBlocks[0].parameters(), 'lr': 0, 'name': 'stem'},
             {'params': backbone_params, 'lr': args.backbone_lr, 'name': 'backbone'},
             {'params': fc_params, 'lr': args.fc_lr, 'name': 'fc'}
         ]

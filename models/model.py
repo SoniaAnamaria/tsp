@@ -62,10 +62,9 @@ class Model(nn.Module):
             feature_size = 432
         return feature_backbone, feature_size
 
-
-@staticmethod
-def _build_fc(in_features, out_features):
-    fc = nn.Linear(in_features, out_features)
-    nn.init.normal_(fc.weight, 0, 0.01)
-    nn.init.constant_(fc.bias, 0)
-    return fc
+    @staticmethod
+    def _build_fc(in_features, out_features):
+        fc = nn.Linear(in_features, out_features)
+        nn.init.normal_(fc.weight, 0, 0.01)
+        nn.init.constant_(fc.bias, 0)
+        return fc
