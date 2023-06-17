@@ -1,6 +1,6 @@
 #!/bin/bash -i
 
-ROOT_DIR=/home/ubuntu/Desktop/thumos
+ROOT_DIR= # path/to/video/folder
 
 if [ -z "$ROOT_DIR" ]; then
     echo "ROOT_DIR variable is not set."
@@ -8,11 +8,6 @@ if [ -z "$ROOT_DIR" ]; then
     echo "The directory must contain two subdirectories: valid and test"
     exit 1
 fi
-
-
-####################################################################################
-############################# PARAMETERS TO KEEP AS IS #############################
-####################################################################################
 
 TRAIN_SUBDIR=valid
 VALID_SUBDIR=test
@@ -38,7 +33,7 @@ MY_MASTER_PORT=$(shuf -i 30000-60000 -n 1)
 source activate tsp
 mkdir -p $OUTPUT_DIR
 export OMP_NUM_THREADS=6
-export PYTHONPATH=/home/ubuntu/PycharmProjects/tsp/
+export PYTHONPATH= # path/to/project
 
 python train.py \
 --root-dir $ROOT_DIR \

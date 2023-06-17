@@ -1,10 +1,10 @@
 #!/bin/bash -i
 
-DATA_PATH=/home/ubuntu/Desktop/thumos/test
-METADATA_CSV_FILENAME=/home/ubuntu/PycharmProjects/tsp/data/thumos14/thumos14_test_metadata.csv
-LOCAL_CHECKPOINT=/home/ubuntu/PycharmProjects/tsp/train/output/r2plus1d_34-tsp_on_thumos14/backbone_lr_0.0001-fc_lr_0.004/epoch_7.pth
+DATA_PATH= # path/to/video/folder
+METADATA_CSV_FILENAME= # path/to/metadata/csv/file
+LOCAL_CHECKPOINT= # path/to/local/checkpoint/file.pth
 
-BACKBONE=x3d
+BACKBONE=x3d # the backbone used in LOCAL_CHECKPOINT
 STRIDE=1
 DEVICE=cuda:0
 
@@ -36,7 +36,7 @@ OUTPUT_DIR=output/local_checkpoint_${BACKBONE}_features/stride_${STRIDE}/
 
 source activate tsp
 mkdir -p $OUTPUT_DIR
-export PYTHONPATH=/home/ubuntu/PycharmProjects/tsp
+export PYTHONPATH= # path/to/project
 
 python extract_features.py \
 --data-path $DATA_PATH \

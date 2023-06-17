@@ -139,7 +139,7 @@ class X3DHead(nn.Module):
 
 
 class X3D(nn.Module):
-    def __init__(self, in_channels=3, nr_classes=400, in_features=24, gamma_b=2.25):
+    def __init__(self, in_channels=3, in_features=24, gamma_b=2.25):
         super().__init__()
         self.stage_blocks = [3, 5, 11, 7]
         blocks = [X3DStem(in_channels, in_features)]
