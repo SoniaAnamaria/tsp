@@ -149,7 +149,7 @@ def main(args):
 
     transform_train = torchvision.transforms.Compose([
         T.ToFloatTensorInZeroOne(),
-        T.Resize((256, 341)),
+        T.Resize((256, 342)),
         T.RandomHorizontalFlip(),
         normalize,
         T.RandomCrop((224, 224))
@@ -170,7 +170,7 @@ def main(args):
 
     transform_valid = torchvision.transforms.Compose([
         T.ToFloatTensorInZeroOne(),
-        T.Resize((256, 341)),
+        T.Resize((256, 342)),
         normalize,
         T.CenterCrop((224, 224))
     ])

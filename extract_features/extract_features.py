@@ -66,7 +66,7 @@ def main(args):
 
     transform = torchvision.transforms.Compose([
         T.ToFloatTensorInZeroOne(),
-        T.Resize((256, 341)),
+        T.Resize((256, 342)),
         normalize,
         T.CenterCrop((224, 224))
     ])
