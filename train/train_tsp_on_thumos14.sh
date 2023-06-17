@@ -2,8 +2,6 @@
 
 ROOT_DIR=/home/ubuntu/Desktop/thumos
 
-DOWNSCALE_FACTOR=1
-
 if [ -z "$ROOT_DIR" ]; then
     echo "ROOT_DIR variable is not set."
     echo "Please set ROOT_DIR to the location of the THUMOS14 videos."
@@ -36,11 +34,6 @@ OUTPUT_DIR=output/${BACKBONE}-tsp_on_thumos14/backbone_lr_${BACKBONE_LR}-fc_lr_$
 
 MY_MASTER_ADDR=127.0.0.1
 MY_MASTER_PORT=$(shuf -i 30000-60000 -n 1)
-
-# downscaling
-BATCH_SIZE=$(($BATCH_SIZE/$DOWNSCALE_FACTOR))
-BACKBONE_LR=$(($BACKBONE_LR/$DOWNSCALE_FACTOR))
-FC_LR=$(($FC_LR/$DOWNSCALE_FACTOR))
 
 source activate tsp
 mkdir -p $OUTPUT_DIR

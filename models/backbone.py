@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
-
 from torchvision.models.video.resnet import VideoResNet, R2Plus1dStem, BasicBlock
 
-__all__ = ['r2plus1d_34']
+from models.i3d import I3D
+
+__all__ = ['r2plus1d_34', 'i3d']
 
 R2PLUS1D_34_MODEL_URL = "https://github.com/moabitcoin/ig65m-pytorch/releases/download/v1.0.0/r2plus1d_34_clip8_ft_kinetics_from_ig65m-0aa0550b.pth"
 
@@ -17,39 +18,36 @@ def r2plus1d_34(pretrained=True, progress=False, **kwargs):
         **kwargs,
     )
 
-    # We need exact Caffe2 momentum for BatchNorm scaling
     for m in model.modules():
         if isinstance(m, nn.BatchNorm3d):
             m.eps = 1e-3
             m.momentum = 0.9
 
     if pretrained:
-        state_dict = torch.hub.load_state_dict_from_url(
-            R2PLUS1D_34_MODEL_URL, progress=progress
-        )
+        state_dict = torch.hub.load_state_dict_from_url(R2PLUS1D_34_MODEL_URL, progress=progress)
         model.load_state_dict(state_dict)
 
     return model
 
 
 class Conv2Plus1D(nn.Sequential):
-    def __init__(self, in_planes, out_planes, midplanes, stride=1, padding=1):
-        midplanes = (in_planes * out_planes * 3 * 3 * 3) // (
+    def __init__(self, in_planes, out_planes, stride=1, padding=1):
+        mid_planes = (in_planes * out_planes * 3 * 3 * 3) // (
                 in_planes * 3 * 3 + 3 * out_planes
         )
         super(Conv2Plus1D, self).__init__(
             nn.Conv3d(
                 in_planes,
-                midplanes,
+                mid_planes,
                 kernel_size=(1, 3, 3),
                 stride=(1, stride, stride),
                 padding=(0, padding, padding),
                 bias=False,
             ),
-            nn.BatchNorm3d(midplanes),
+            nn.BatchNorm3d(mid_planes),
             nn.ReLU(inplace=True),
             nn.Conv3d(
-                midplanes,
+                mid_planes,
                 out_planes,
                 kernel_size=(3, 1, 1),
                 stride=(stride, 1, 1),
@@ -58,6 +56,10 @@ class Conv2Plus1D(nn.Sequential):
             ),
         )
 
-    @staticmethod
-    def get_downsample_stride(stride):
-        return (stride, stride, stride)
+
+def i3d(pretrained=True, progress=False, **kwargs):
+    model = I3D(in_channels=3)
+    if pretrained:
+        model.load_state_dict(torch.load('/home/ubuntu/PycharmProjects/tsp/models/rgb_imagenet.pt'))
+
+    return model

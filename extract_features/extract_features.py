@@ -35,13 +35,22 @@ def main(args):
     os.makedirs(args.output_dir, exist_ok=True)
 
     print('LOADING DATA')
-    transform = torchvision.transforms.Compose([
-        T.ToFloatTensorInZeroOne(),
-        T.Resize((128, 171)),
-        T.Normalize(mean=[0.43216, 0.394666, 0.37645],
-                    std=[0.22803, 0.22145, 0.216989]),
-        T.CenterCrop((112, 112))
-    ])
+    if args.backbone == 'r2plus1d_34':
+        transform = torchvision.transforms.Compose([
+            T.ToFloatTensorInZeroOne(),
+            T.Resize((128, 171)),
+            T.Normalize(mean=[0.43216, 0.394666, 0.37645],
+                        std=[0.22803, 0.22145, 0.216989]),
+            T.CenterCrop((112, 112))
+        ])
+    else:
+        transform = torchvision.transforms.Compose([
+            T.ToFloatTensorInZeroOne(),
+            T.Resize((256, 342)),
+            T.Normalize(mean=[0.43216, 0.394666, 0.37645],
+                        std=[0.22803, 0.22145, 0.216989]),
+            T.CenterCrop((224, 224))
+        ])
     metadata_df = pd.read_csv(args.metadata_csv_filename)
     metadata_df['is-computed-already'] = metadata_df['filename'].map(
         lambda f: os.path.exists(os.path.join(args.output_dir, os.path.basename(f).split('.')[0] + '.pkl')))

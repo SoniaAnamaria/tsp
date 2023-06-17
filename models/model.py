@@ -1,6 +1,7 @@
 import torch
 from torch import nn
-from .backbone import r2plus1d_34
+
+from .backbone import r2plus1d_34, i3d
 
 
 class Model(nn.Module):
@@ -43,15 +44,20 @@ class Model(nn.Module):
     def _build_feature_backbone(backbone, progress, **kwargs):
         if backbone == 'r2plus1d_34':
             builder = r2plus1d_34
+        elif backbone == 'i3d':
+            builder = i3d
         else:
             raise ValueError(f'<Model>: {backbone} is an invalid architecture type. '
                              f'Supported  architectures: r2plus1d_34, i3d, and x3d')
 
         feature_backbone = builder(pretrained=True, progress=progress, **kwargs)
 
-        # remove the FC layer of the backbone
-        feature_size = feature_backbone.fc.in_features
-        feature_backbone.fc = nn.Sequential()
+        if backbone == 'r2plus1d_34':
+            feature_size = feature_backbone.fc.in_features
+            feature_backbone.fc = nn.Sequential()
+        else:
+            feature_size = feature_backbone.logits.in_channels
+            feature_backbone.logits = nn.Sequential()
 
         return feature_backbone, feature_size
 

@@ -127,14 +127,24 @@ def main(args):
         with open(label_mapping_json) as f:
             label_mapping = json.load(f)
             label_mappings.append(dict(zip(label_mapping, range(len(label_mapping)))))
-    transform_train = torchvision.transforms.Compose([
-        T.ToFloatTensorInZeroOne(),
-        T.Resize((128, 171)),
-        T.RandomHorizontalFlip(),
-        T.Normalize(mean=[0.43216, 0.394666, 0.37645],
-                    std=[0.22803, 0.22145, 0.216989]),
-        T.RandomCrop((112, 112))
-    ])
+    if args.backbone == 'r2plus1d_34':
+        transform_train = torchvision.transforms.Compose([
+            T.ToFloatTensorInZeroOne(),
+            T.Resize((128, 171)),
+            T.RandomHorizontalFlip(),
+            T.Normalize(mean=[0.43216, 0.394666, 0.37645],
+                        std=[0.22803, 0.22145, 0.216989]),
+            T.RandomCrop((112, 112))
+        ])
+    else:
+        transform_train = torchvision.transforms.Compose([
+            T.ToFloatTensorInZeroOne(),
+            T.Resize((256, 342)),
+            T.RandomHorizontalFlip(),
+            T.Normalize(mean=[0.43216, 0.394666, 0.37645],
+                        std=[0.22803, 0.22145, 0.216989]),
+            T.RandomCrop((224, 224))
+        ])
     dataset_train = UntrimmedVideoDataset(
         csv_filename=args.train_csv_filename,
         root_dir=train_dir,
@@ -146,13 +156,22 @@ def main(args):
         label_columns=args.label_columns,
         label_mappings=label_mappings,
         global_video_features=args.global_video_features)
-    transform_valid = torchvision.transforms.Compose([
-        T.ToFloatTensorInZeroOne(),
-        T.Resize((128, 171)),
-        T.Normalize(mean=[0.43216, 0.394666, 0.37645],
-                    std=[0.22803, 0.22145, 0.216989]),
-        T.CenterCrop((112, 112))
-    ])
+    if args.backbone == 'r2plus1d_34':
+        transform_valid = torchvision.transforms.Compose([
+            T.ToFloatTensorInZeroOne(),
+            T.Resize((128, 171)),
+            T.Normalize(mean=[0.43216, 0.394666, 0.37645],
+                        std=[0.22803, 0.22145, 0.216989]),
+            T.CenterCrop((112, 112))
+        ])
+    else:
+        transform_valid = torchvision.transforms.Compose([
+            T.ToFloatTensorInZeroOne(),
+            T.Resize((256, 342)),
+            T.Normalize(mean=[0.43216, 0.394666, 0.37645],
+                        std=[0.22803, 0.22145, 0.216989]),
+            T.CenterCrop((224, 224))
+        ])
     dataset_valid = UntrimmedVideoDataset(
         csv_filename=args.valid_csv_filename,
         root_dir=valid_dir,
@@ -180,17 +199,42 @@ def main(args):
                   concat_gvf=args.global_video_features is not None)
     model.to(device)
     criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)
-    backbone_params = chain(model.features.layer1.parameters(),
-                            model.features.layer2.parameters(),
-                            model.features.layer3.parameters(),
-                            model.features.layer4.parameters())
+
+    if args.backbone == 'i3d':
+        backbone_params = chain(model.features.Conv3d_1a_7x7.parameters(),
+                                model.features.Conv3d_2b_1x1.parameters(),
+                                model.features.Conv3d_2c_3x3.parameters(),
+                                model.features.Mixed_3b.parameters(),
+                                model.features.Mixed_3c.parameters(),
+                                model.features.Mixed_4b.parameters(),
+                                model.features.Mixed_4c.parameters(),
+                                model.features.Mixed_4d.parameters(),
+                                model.features.Mixed_4e.parameters(),
+                                model.features.Mixed_4f.parameters(),
+                                model.features.Mixed_5b.parameters(),
+                                model.features.Mixed_5c.parameters())
+    else:
+        backbone_params = chain(model.features.layer1.parameters(),
+                                model.features.layer2.parameters(),
+                                model.features.layer3.parameters(),
+                                model.features.layer4.parameters())
+
     if len(args.label_columns) == 1:
         fc_params = model.fc.parameters()
     else:
         fc_params = chain(model.fc1.parameters(), model.fc2.parameters())
-    params = [{'params': model.features.stem.parameters(), 'lr': 0, 'name': 'stem'},
-              {'params': backbone_params, 'lr': args.backbone_lr, 'name': 'backbone'},
-              {'params': fc_params, 'lr': args.fc_lr, 'name': 'fc'}]
+
+    if args.backbone == 'i3d':
+        params = [
+            {'params': backbone_params, 'lr': args.backbone_lr, 'name': 'backbone'},
+            {'params': fc_params, 'lr': args.fc_lr, 'name': 'fc'}
+        ]
+    else:
+        params = [
+            {'params': model.features.stem.parameters(), 'lr': 0, 'name': 'stem'},
+            {'params': backbone_params, 'lr': args.backbone_lr, 'name': 'backbone'},
+            {'params': fc_params, 'lr': args.fc_lr, 'name': 'fc'}
+        ]
     optimizer = torch.optim.SGD(params, momentum=args.momentum, weight_decay=args.weight_decay)
     warmup_iters = args.lr_warmup_epochs * len(data_loader_train)
     lr_milestones = []
