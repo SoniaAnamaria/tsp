@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from .backbone import r2plus1d_34, i3d
+from .backbone import r2plus1d_34, i3d, x3d
 
 
 class Model(nn.Module):
@@ -17,9 +17,7 @@ class Model(nn.Module):
         self.num_classes = num_classes
         self.num_heads = num_heads
         self.concat_gvf = concat_gvf
-
         self.features, self.feature_size = Model._build_feature_backbone(backbone, progress, **kwargs)
-
         if self.num_heads == 1:
             self.fc = Model._build_fc(self.feature_size, num_classes[0])
         else:
@@ -46,6 +44,8 @@ class Model(nn.Module):
             builder = r2plus1d_34
         elif backbone == 'i3d':
             builder = i3d
+        elif backbone == 'x3d':
+            builder = x3d
         else:
             raise ValueError(f'<Model>: {backbone} is an invalid architecture type. '
                              f'Supported  architectures: r2plus1d_34, i3d, and x3d')
@@ -55,15 +55,17 @@ class Model(nn.Module):
         if backbone == 'r2plus1d_34':
             feature_size = feature_backbone.fc.in_features
             feature_backbone.fc = nn.Sequential()
-        else:
+        elif backbone == 'i3d':
             feature_size = feature_backbone.logits.in_channels
             feature_backbone.logits = nn.Sequential()
-
+        else:
+            feature_size = 432
         return feature_backbone, feature_size
 
-    @staticmethod
-    def _build_fc(in_features, out_features):
-        fc = nn.Linear(in_features, out_features)
-        nn.init.normal_(fc.weight, 0, 0.01)
-        nn.init.constant_(fc.bias, 0)
-        return fc
+
+@staticmethod
+def _build_fc(in_features, out_features):
+    fc = nn.Linear(in_features, out_features)
+    nn.init.normal_(fc.weight, 0, 0.01)
+    nn.init.constant_(fc.bias, 0)
+    return fc

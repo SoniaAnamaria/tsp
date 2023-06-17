@@ -22,9 +22,9 @@ LABEL_COLUMNS="action-label temporal-region-label"
 LABEL_MAPPING_JSONS="../data/thumos14/thumos14_action_label_mapping.json \
                      ../data/thumos14/thumos14_temporal_region_label_mapping.json"
 LOSS_ALPHAS="1.0 1.0"
-GLOBAL_VIDEO_FEATURES=../data/thumos14/global_video_features/r2plus1d_34-max_gvf.h5
+GLOBAL_VIDEO_FEATURES=../data/thumos14/global_video_features/x3d-max_gvf.h5
 
-BACKBONE=r2plus1d_34
+BACKBONE=x3d
 
 BATCH_SIZE=8
 BACKBONE_LR=0.0001

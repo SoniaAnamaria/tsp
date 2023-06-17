@@ -4,7 +4,9 @@ from torchvision.models.video.resnet import VideoResNet, R2Plus1dStem, BasicBloc
 
 from models.i3d import I3D
 
-__all__ = ['r2plus1d_34', 'i3d']
+__all__ = ['r2plus1d_34', 'i3d', 'x3d']
+
+from models.x3d import X3D, modify_model
 
 R2PLUS1D_34_MODEL_URL = "https://github.com/moabitcoin/ig65m-pytorch/releases/download/v1.0.0/r2plus1d_34_clip8_ft_kinetics_from_ig65m-0aa0550b.pth"
 
@@ -61,5 +63,16 @@ def i3d(pretrained=True, progress=False, **kwargs):
     model = I3D(in_channels=3)
     if pretrained:
         model.load_state_dict(torch.load('/home/ubuntu/PycharmProjects/tsp/models/rgb_imagenet.pt'))
+
+    return model
+
+
+def x3d(pretrained=True, progress=False, **kwargs):
+    model = X3D()
+    if pretrained:
+        state_dict = torch.load("/home/ubuntu/PycharmProjects/tsp/models/x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth")
+        modify_model(state_dict)
+        torch.save(state_dict, "/home/ubuntu/PycharmProjects/tsp/models/x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth")
+        model.load_state_dict(torch.load('/home/ubuntu/PycharmProjects/tsp/models/x3d_m_facebook_16x5x1_kinetics400_rgb_20201027-3f42382a.pth'))
 
     return model

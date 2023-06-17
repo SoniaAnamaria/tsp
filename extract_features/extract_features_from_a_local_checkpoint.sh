@@ -4,7 +4,7 @@ DATA_PATH=/home/ubuntu/Desktop/thumos/test
 METADATA_CSV_FILENAME=/home/ubuntu/PycharmProjects/tsp/data/thumos14/thumos14_test_metadata.csv
 LOCAL_CHECKPOINT=/home/ubuntu/PycharmProjects/tsp/train/output/r2plus1d_34-tsp_on_thumos14/backbone_lr_0.0001-fc_lr_0.004/epoch_7.pth
 
-BACKBONE=r2plus1d_34
+BACKBONE=x3d
 STRIDE=1
 DEVICE=cuda:0
 

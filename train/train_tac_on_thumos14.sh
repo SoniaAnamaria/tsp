@@ -17,7 +17,7 @@ LABEL_COLUMNS=action-label
 LABEL_MAPPING_JSONS=../data/thumos14/thumos14_action_label_mapping.json
 LOSS_ALPHAS=1.0
 
-BACKBONE=r2plus1d_34
+BACKBONE=x3d
 
 BATCH_SIZE=8
 BACKBONE_LR=0.00001
