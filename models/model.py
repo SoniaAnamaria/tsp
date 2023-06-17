@@ -1,34 +1,23 @@
 import torch
 from torch import nn
+
 from .backbone import r2plus1d_34, r2plus1d_18, r3d_18, x3d
 
 
 class Model(nn.Module):
 
     def __init__(self, backbone, num_classes, num_heads=1, concat_gvf=False, progress=True, **kwargs):
-        """
-        Args:
-            backbone (string): The name of the backbone architecture. Supported architectures: r2plus1d_34, r2plus1d_18, and r3d_18.
-            num_heads (int): The number of output heads
-            num_classes (list of int): The number of labels per head
-            concat_gvf (bool): If True and num_heads == 2, then concat global video features (GVF) to clip
-                features before applying the second head FC layer.
-            progress (bool): If True, displays a progress bar of the download to stderr
-            **kwargs: keyword arguments to pass to backbone architecture constructor
-        """
         super().__init__()
         print(f'<Model>: backbone {backbone} num_classes {num_classes} num_heads {num_heads} kwargs {kwargs}')
-        assert len(
-            num_classes) == num_heads, f'<Model>: incompatible configuration. len(num_classes) must be equal to num_heads'
+        assert len(num_classes) == num_heads, \
+            f'<Model>: incompatible configuration. len(num_classes) must be equal to num_heads'
         assert num_heads == 1 or num_heads == 2, f'<Model>: num_heads = {num_heads} must be either 1 or 2'
 
         self.backbone = backbone
         self.num_classes = num_classes
         self.num_heads = num_heads
         self.concat_gvf = concat_gvf
-
         self.features, self.feature_size = Model._build_feature_backbone(backbone, progress, **kwargs)
-
         if self.num_heads == 1:
             self.fc = Model._build_fc(self.feature_size, num_classes[0])
         else:

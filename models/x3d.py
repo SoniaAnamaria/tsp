@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 
 
@@ -10,17 +9,25 @@ class SqueezeExcitation(nn.Module):
         self.channels_reduced = _round_width(channels, reduction)
         self.conv1 = nn.Conv3d(channels, self.channels_reduced, kernel_size=1)
         self.conv2 = nn.Conv3d(self.channels_reduced, channels, kernel_size=1)
-        self.activation = nn.ReLU()
-        self.sigmoid = nn.Sigmoid()
+        self.activation1 = nn.ReLU()
+        self.activation2 = nn.Sigmoid()
 
     def forward(self, x):
         se_input = x
         x = self.avg_pool(x)
         x = self.conv1(x)
-        x = self.activation(x)
+        x = self.activation1(x)
         x = self.conv2(x)
-        x = self.sigmoid(x)
+        x = self.activation2(x)
         return se_input * x
+
+
+def _round_width(channels_in, multiplier, min_width=8):
+    channels_in *= multiplier
+    channels_out = max(min_width, int(channels_in + min_width / 2) // min_width * min_width)
+    if channels_out < 0.9 * channels_in:
+        channels_out += min_width
+    return int(channels_out)
 
 
 class Swish(nn.Module):
@@ -30,16 +37,6 @@ class Swish(nn.Module):
 
     def forward(self, x):
         return x * self.sigmoid(x)
-
-
-def _round_width(width, multiplier, min_width=8, divisor=8):
-    width *= multiplier
-    min_width = min_width or divisor
-    width_out = max(min_width,
-                    int(width + divisor / 2) // divisor * divisor)
-    if width_out < 0.9 * width:
-        width_out += divisor
-    return int(width_out)
 
 
 class X3DStem(nn.Module):
@@ -79,11 +76,11 @@ class X3DBlock(nn.Module):
         self.norm_2 = nn.BatchNorm3d(num_features=inter_channels, eps=norm_eps, momentum=norm_momentum)
         if self.reduction != 0.0:
             self.se = SqueezeExcitation(inter_channels, reduction)
-        self.swish = Swish()
+        self.activation_2 = Swish()
         self.conv_3 = nn.Conv3d(in_channels=inter_channels, out_channels=out_channels, kernel_size=(1, 1, 1),
                                 bias=False)
         self.norm_3 = nn.BatchNorm3d(num_features=out_channels, eps=norm_eps, momentum=norm_momentum)
-        self.activation = nn.ReLU()
+        self.activation_3 = nn.ReLU()
 
     def forward(self, x):
         block_input = x
@@ -97,11 +94,11 @@ class X3DBlock(nn.Module):
         x = self.norm_2(x)
         if self.reduction != 0.0:
             x = self.se(x)
-        x = self.swish(x)
+        x = self.activation_2(x)
         x = self.conv_3(x)
         x = self.norm_3(x)
         x = x + block_input
-        x = self.activation(x)
+        x = self.activation_3(x)
         return x
 
 
@@ -125,14 +122,12 @@ class X3DStage(nn.Module):
 
 
 class X3DHead(nn.Module):
-    def __init__(self, in_channels, out_channels, nr_classes, norm_eps=1e-3, norm_momentum=0.9):
+    def __init__(self, in_channels, out_channels, norm_eps=1e-3, norm_momentum=0.9):
         super().__init__()
         self.conv5 = nn.Conv3d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, 1, 1), bias=False)
         self.norm = nn.BatchNorm3d(num_features=out_channels, eps=norm_eps, momentum=norm_momentum)
         self.activation = nn.ReLU()
         self.pool = nn.AdaptiveAvgPool3d((1, 1, 1))
-        # self.fc1 = nn.Linear(out_channels, 2048)
-        # self.fc2 = nn.Linear(2048, nr_classes)
 
     def forward(self, x):
         x = self.conv5(x)
@@ -151,10 +146,9 @@ class X3D(nn.Module):
         for i, nr_blocks in enumerate(self.stage_blocks):
             out_channels = in_features if i == 0 else in_features * 2
             inter_channels = int(out_channels * gamma_b)
-            res = X3DStage(nr_blocks, in_features, inter_channels, out_channels)
-            blocks.append(res)
+            blocks.append(X3DStage(nr_blocks, in_features, inter_channels, out_channels))
             in_features = out_channels
-        blocks.append(X3DHead(in_features, int(in_features * gamma_b), nr_classes))
+        blocks.append(X3DHead(in_features, int(in_features * gamma_b)))
         self.x3dBlocks = nn.ModuleList(blocks)
 
     def forward(self, x):
@@ -243,8 +237,3 @@ def modify_model(model):
     model.pop("cls_head.fc1.weight")
     model.pop("cls_head.fc2.weight")
     model.pop("cls_head.fc2.bias")
-
-    # modify_conv(model, "x3dBlocks.5.fc1", "cls_head.fc1")
-    # model["x3dBlocks.5.fc1.bias"] = torch.zeros(2048)
-    # modify_conv(model, "x3dBlocks.5.fc2", "cls_head.fc2")
-    # modify_key(model, "x3dBlocks.5.fc2.bias", "cls_head.fc2.bias")
