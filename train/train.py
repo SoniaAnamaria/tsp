@@ -15,30 +15,30 @@ from common import transforms as T
 from common import utils
 from common.scheduler import WarmupMultiStepLR
 from models.model import Model
-from untrimmed_video_dataset import UntrimmedVideoDataset
+from training_dataset import TrainingDataset
 
 sys.path.insert(0, '..')
 
 
-def compute_accuracies_and_log_metrics(metric_logger, loss, outputs, targets, head_losses, label_columns):
+def compute_accuracies_and_log_metrics(logger, loss, outputs, targets, head_losses, label_columns):
     for output, target, head_loss, label_column in zip(outputs, targets, head_losses, label_columns):
         mask = target != -1
         output, target = output[mask], target[mask]
         if output.shape[0]:
-            head_acc, = utils.accuracy(output, target, top_k=(1,))
-            metric_logger.meters[f'acc_{label_column}'].update(head_acc.item(), n=output.shape[0])
-        metric_logger.meters[f'loss_{label_column}'].update(head_loss.item())
-    metric_logger.update(loss=loss.item())
+            head_acc, = utils.compute_accuracy(output, target, top_k=(1,))
+            logger.meters[f'acc_{label_column}'].update(head_acc.item(), n=output.shape[0])
+        logger.meters[f'loss_{label_column}'].update(head_loss.item())
+    logger.update(loss=loss.item())
 
 
-def write_metrics_results_to_file(metric_logger, epoch, label_columns, output_dir):
+def write_results_to_file(logger, epoch, label_columns, output_dir):
     results = f'** Valid Epoch {epoch}: '
     accuracies = []
     for label_column in label_columns:
-        results += f' <{label_column}> Accuracy {metric_logger.meters[f"acc_{label_column}"].global_avg:.3f}'
-        results += f' Loss {metric_logger.meters[f"loss_{label_column}"].global_avg:.3f};'
-        accuracies.append(metric_logger.meters[f'acc_{label_column}'].global_avg)
-    results += f' Total Loss {metric_logger.meters["loss"].global_avg:.3f}'
+        results += f' <{label_column}> Accuracy {logger.meters[f"acc_{label_column}"].global_avg:.3f}'
+        results += f' Loss {logger.meters[f"loss_{label_column}"].global_avg:.3f};'
+        accuracies.append(logger.meters[f'acc_{label_column}'].global_avg)
+    results += f' Total Loss {logger.meters["loss"].global_avg:.3f}'
     avg_acc = np.average(accuracies)
     results += f' Avg Accuracy {avg_acc:.3f}\n'
     utils.write_to_file(file=os.path.join(output_dir, 'results.txt'), mode='a', content_to_write=results)
@@ -48,12 +48,12 @@ def write_metrics_results_to_file(metric_logger, epoch, label_columns, output_di
 def train_one_epoch(model, criterion, optimizer, lr_scheduler, data_loader, device, epoch, print_freq, label_columns,
                     loss_alphas):
     model.train()
-    metric_logger = utils.MetricLogger(delimiter=' ')
+    logger = utils.Logger(delimiter=' ')
     for g in optimizer.param_groups:
-        metric_logger.add_meter(f'{g["name"]}_lr', utils.SmoothedValue(window_size=1, fmt='{value:.2e}'))
-    metric_logger.add_meter('clips/s', utils.SmoothedValue(window_size=10, fmt='{value:.2f}'))
+        logger.add_meter(f'{g["name"]}_lr', utils.Value(window_size=1, info='{value:.2e}'))
+    logger.add_meter('clips/s', utils.Value(window_size=10, info='{value:.2f}'))
     header = f'Train Epoch {epoch}:'
-    for sample in metric_logger.log_every(data_loader, print_freq, header, device=device):
+    for sample in logger.log(data_loader, print_freq, header, device=device):
         start_time = time.time()
 
         clip = sample['clip'].to(device)
@@ -77,19 +77,19 @@ def train_one_epoch(model, criterion, optimizer, lr_scheduler, data_loader, devi
         loss.backward()
         optimizer.step()
 
-        compute_accuracies_and_log_metrics(metric_logger, loss, outputs, targets, head_losses, label_columns)
+        compute_accuracies_and_log_metrics(logger, loss, outputs, targets, head_losses, label_columns)
         for g in optimizer.param_groups:
-            metric_logger.meters[f'{g["name"]}_lr'].update(g['lr'])
-        metric_logger.meters['clips/s'].update(clip.shape[0] / (time.time() - start_time))
+            logger.meters[f'{g["name"]}_lr'].update(g['lr'])
+        logger.meters['clips/s'].update(clip.shape[0] / (time.time() - start_time))
         lr_scheduler.step()
 
 
-def evaluate(model, criterion, data_loader, device, epoch, print_freq, label_columns, loss_alphas, output_dir):
+def evaluate_one_epoch(model, criterion, data_loader, device, epoch, print_freq, label_columns, loss_alphas, output_dir):
     model.eval()
-    metric_logger = utils.MetricLogger(delimiter=' ')
+    logger = utils.Logger(delimiter=' ')
     header = f'Valid Epoch {epoch}:'
     with torch.no_grad():
-        for sample in metric_logger.log_every(data_loader, print_freq, header, device=device):
+        for sample in logger.log(data_loader, print_freq, header, device=device):
             clip = sample['clip'].to(device, non_blocking=True)
             if 'gvf' in sample:
                 gvf = sample['gvf'].to(device, non_blocking=True)
@@ -106,8 +106,8 @@ def evaluate(model, criterion, data_loader, device, epoch, print_freq, label_col
                 head_losses.append(head_loss)
                 loss += alpha * head_loss
 
-            compute_accuracies_and_log_metrics(metric_logger, loss, outputs, targets, head_losses, label_columns)
-    results = write_metrics_results_to_file(metric_logger, epoch, label_columns, output_dir)
+            compute_accuracies_and_log_metrics(logger, loss, outputs, targets, head_losses, label_columns)
+    results = write_results_to_file(logger, epoch, label_columns, output_dir)
     print(results)
 
 
@@ -145,7 +145,7 @@ def main(args):
                         std=[0.22803, 0.22145, 0.216989]),
             T.RandomCrop((224, 224))
         ])
-    dataset_train = UntrimmedVideoDataset(
+    dataset_train = TrainingDataset(
         csv_filename=args.train_csv_filename,
         root_dir=train_dir,
         clip_length=args.clip_len,
@@ -172,7 +172,7 @@ def main(args):
                         std=[0.22803, 0.22145, 0.216989]),
             T.CenterCrop((224, 224))
         ])
-    dataset_valid = UntrimmedVideoDataset(
+    dataset_valid = TrainingDataset(
         csv_filename=args.valid_csv_filename,
         root_dir=valid_dir,
         clip_length=args.clip_len,
@@ -276,9 +276,9 @@ def main(args):
                           'args': args}
             torch.save(checkpoint, os.path.join(args.output_dir, f'epoch_{epoch}.pth'))
             torch.save(checkpoint, os.path.join(args.output_dir, 'checkpoint.pth'))
-        evaluate(model=model, criterion=criterion, data_loader=data_loader_valid, device=device, epoch=epoch,
-                 print_freq=args.print_freq, label_columns=args.label_columns, loss_alphas=args.loss_alphas,
-                 output_dir=args.output_dir)
+        evaluate_one_epoch(model=model, criterion=criterion, data_loader=data_loader_valid, device=device, epoch=epoch,
+                           print_freq=args.print_freq, label_columns=args.label_columns, loss_alphas=args.loss_alphas,
+                           output_dir=args.output_dir)
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print(f'Training time {total_time_str}')

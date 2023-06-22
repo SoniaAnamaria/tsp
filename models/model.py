@@ -17,12 +17,12 @@ class Model(nn.Module):
         self.num_classes = num_classes
         self.num_heads = num_heads
         self.concat_gvf = concat_gvf
-        self.features, self.feature_size = Model._build_feature_backbone(backbone, progress, **kwargs)
+        self.features, self.feature_size = Model.build_backbone(backbone, progress, **kwargs)
         if self.num_heads == 1:
-            self.fc = Model._build_fc(self.feature_size, num_classes[0])
+            self.fc = Model.build_fc_layer(self.feature_size, num_classes[0])
         else:
-            self.fc1 = Model._build_fc(self.feature_size, num_classes[0])
-            self.fc2 = Model._build_fc(2 * self.feature_size if self.concat_gvf else self.feature_size, num_classes[1])
+            self.fc1 = Model.build_fc_layer(self.feature_size, num_classes[0])
+            self.fc2 = Model.build_fc_layer(2 * self.feature_size if self.concat_gvf else self.feature_size, num_classes[1])
 
     def forward(self, x, gvf=None, return_features=False):
         features = self.features(x)
@@ -39,7 +39,7 @@ class Model(nn.Module):
         return (logits, features) if return_features else logits
 
     @staticmethod
-    def _build_feature_backbone(backbone, progress, **kwargs):
+    def build_backbone(backbone, progress, **kwargs):
         if backbone == 'r2plus1d_34':
             builder = r2plus1d_34
         elif backbone == 'i3d':
@@ -63,7 +63,7 @@ class Model(nn.Module):
         return feature_backbone, feature_size
 
     @staticmethod
-    def _build_fc(in_features, out_features):
+    def build_fc_layer(in_features, out_features):
         fc = nn.Linear(in_features, out_features)
         nn.init.normal_(fc.weight, 0, 0.01)
         nn.init.constant_(fc.bias, 0)

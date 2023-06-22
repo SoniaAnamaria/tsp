@@ -5,10 +5,6 @@ from torchvision.models.video.resnet import VideoResNet, R2Plus1dStem, BasicBloc
 from models.i3d import I3D
 from models.x3d import X3D, modify_model
 
-__all__ = ['r2plus1d_34', 'i3d', 'x3d']
-
-R2PLUS1D_34_MODEL_URL = "https://github.com/moabitcoin/ig65m-pytorch/releases/download/v1.0.0/r2plus1d_34_clip8_ft_kinetics_from_ig65m-0aa0550b.pth"
-
 
 def r2plus1d_34(pretrained=True, progress=False, **kwargs):
     model = VideoResNet(
@@ -25,8 +21,7 @@ def r2plus1d_34(pretrained=True, progress=False, **kwargs):
             m.momentum = 0.9
 
     if pretrained:
-        state_dict = torch.hub.load_state_dict_from_url(R2PLUS1D_34_MODEL_URL, progress=progress)
-        model.load_state_dict(state_dict)
+        model.load_state_dict(torch.load('../r2plus1d_34_clip8_ft_kinetics_from_ig65m-0aa0550b.pth'))
 
     return model
 
@@ -59,9 +54,9 @@ class Conv2Plus1D(nn.Sequential):
 
 
 def i3d(pretrained=True, progress=False, **kwargs):
-    model = I3D(in_channels=3)
+    model = I3D()
     if pretrained:
-        model.load_state_dict(torch.load('/home/ubuntu/PycharmProjects/tsp/models/rgb_imagenet.pt'))
+        model.load_state_dict(torch.load('../rgb_imagenet.pt'))
 
     return model
 

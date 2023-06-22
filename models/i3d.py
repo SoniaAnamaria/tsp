@@ -79,7 +79,7 @@ class InceptionModule(nn.Module):
 
 
 class I3D(torch.nn.Module):
-    def __init__(self, num_classes=400, in_channels=3, dropout_keep_prob=0.5):
+    def __init__(self, num_classes=20, in_channels=3, dropout_keep_prob=0.5):
         super(I3D, self).__init__()
         self.num_classes = num_classes
         self.Conv3d_1a_7x7 = Unit3D(in_channels=in_channels, out_channels=64, kernel=[7, 7, 7], stride=(2, 2, 2))

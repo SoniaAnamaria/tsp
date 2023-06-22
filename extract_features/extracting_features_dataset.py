@@ -10,10 +10,10 @@ from torch.utils.data import Dataset
 from torchvision.io import read_video
 
 
-class EvalVideoDataset(Dataset):
+class ExtractingFeaturesDataset(Dataset):
     def __init__(self, metadata_df, root_dir, clip_length, frame_rate, stride, output_dir, transforms=None):
-        metadata_df = EvalVideoDataset._append_root_dir_to_filenames_and_check_files_exist(metadata_df, root_dir)
-        self.clip_metadata_df = EvalVideoDataset._generate_clips_metadata(metadata_df, clip_length, frame_rate, stride)
+        metadata_df = ExtractingFeaturesDataset.check_files_exist(metadata_df, root_dir)
+        self.clip_metadata_df = ExtractingFeaturesDataset.generate_metadata(metadata_df, clip_length, frame_rate, stride)
         self.clip_length = clip_length
         self.frame_rate = frame_rate
         self.stride = stride
@@ -31,7 +31,7 @@ class EvalVideoDataset(Dataset):
         clip_end = clip_start + self.clip_length / self.frame_rate
 
         frames, _, _ = read_video(filename=filename, start_pts=clip_start, end_pts=clip_end, pts_unit='sec')
-        idx = EvalVideoDataset._resample_video_idx(self.clip_length, fps, self.frame_rate)
+        idx = ExtractingFeaturesDataset.resample_video(self.clip_length, fps, self.frame_rate)
         frames = frames[idx][:self.clip_length]
         if frames.shape[0] != self.clip_length:
             raise RuntimeError(f'<EvalVideoDataset>: got clip of length {frames.shape[0]} != {self.clip_length}.'
@@ -59,7 +59,7 @@ class EvalVideoDataset(Dataset):
                 del self.saved_features[filename]
 
     @staticmethod
-    def _append_root_dir_to_filenames_and_check_files_exist(df, root_dir):
+    def check_files_exist(df, root_dir):
         df['filename'] = df['filename'].map(lambda f: os.path.join(root_dir, f))
         filenames = df.drop_duplicates('filename')['filename'].values
         for f in filenames:
@@ -69,7 +69,7 @@ class EvalVideoDataset(Dataset):
         return df
 
     @staticmethod
-    def _generate_clips_metadata(df, clip_length, frame_rate, stride):
+    def generate_metadata(df, clip_length, frame_rate, stride):
         clip_metadata = {
             'filename': [],
             'fps': [],
@@ -78,7 +78,7 @@ class EvalVideoDataset(Dataset):
         }
         for i, row in df.iterrows():
             total_frames_after_resampling = int(row['video-frames'] * (float(frame_rate) / row['fps']))
-            idx = EvalVideoDataset._resample_video_idx(total_frames_after_resampling, row['fps'], frame_rate)
+            idx = ExtractingFeaturesDataset.resample_video(total_frames_after_resampling, row['fps'], frame_rate)
             if isinstance(idx, slice):
                 frame_idx = np.arange(row['video-frames'])[idx]
             else:
@@ -95,7 +95,7 @@ class EvalVideoDataset(Dataset):
         return pd.DataFrame(clip_metadata)
 
     @staticmethod
-    def _resample_video_idx(num_frames, original_fps, new_fps):
+    def resample_video(num_frames, original_fps, new_fps):
         step = float(original_fps) / new_fps
         if step.is_integer():
             step = int(step)

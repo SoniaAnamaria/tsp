@@ -5,17 +5,17 @@ from collections import defaultdict, deque
 import torch
 
 
-class SmoothedValue(object):
-    def __init__(self, window_size=20, fmt=None):
-        if fmt is None:
-            fmt = '{global_avg:.2f}'
+class Value(object):
+    def __init__(self, window_size=20, info=None):
+        if info is None:
+            info = '{global_avg:.2f}'
         self.deque = deque(maxlen=window_size)
         self.count = 0
         self.total = 0.0
-        self.fmt = fmt
+        self.info = info
 
     def __str__(self):
-        return self.fmt.format(
+        return self.info.format(
             avg=self.avg,
             global_avg=self.global_avg,
             value=self.value)
@@ -38,9 +38,9 @@ class SmoothedValue(object):
         return self.deque[-1]
 
 
-class MetricLogger(object):
+class Logger(object):
     def __init__(self, delimiter='\t'):
-        self.meters = defaultdict(SmoothedValue)
+        self.meters = defaultdict(Value)
         self.delimiter = delimiter
 
     def __str__(self):
@@ -64,15 +64,15 @@ class MetricLogger(object):
     def add_meter(self, name, meter):
         self.meters[name] = meter
 
-    def log_every(self, iterable, print_freq, header, device):
+    def log(self, iterable, print_freq, header, device):
         i = 0
         start_time = time.time()
         end_time = time.time()
-        iteration_time = SmoothedValue(fmt='{avg:.2f}')
-        data_time = SmoothedValue(fmt='{avg:.2f}')
+        iteration_time = Value(info='{avg:.2f}')
+        data_time = Value(info='{avg:.2f}')
         space_fmt = ':' + str(len(str(len(iterable)))) + 'd'
         if torch.cuda.is_available():
-            log_msg = self.delimiter.join([
+            message = self.delimiter.join([
                 header,
                 '[{0' + space_fmt + '}/{1}]',
                 'eta: {eta}',
@@ -82,7 +82,7 @@ class MetricLogger(object):
                 'max_mem: {memory:.2f}GB'
             ])
         else:
-            log_msg = self.delimiter.join([
+            message = self.delimiter.join([
                 header,
                 '[{0' + space_fmt + '}/{1}]',
                 'eta: {eta}',
@@ -99,12 +99,12 @@ class MetricLogger(object):
                 eta_seconds = iteration_time.global_avg * (len(iterable) - i)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
                 if torch.cuda.is_available():
-                    print(log_msg.format(
+                    print(message.format(
                         i, len(iterable), eta=eta_string, meters=str(self),
                         time=str(iteration_time), data=str(data_time),
                         memory=torch.cuda.max_memory_allocated(device) / GB), flush=True)
                 else:
-                    print(log_msg.format(
+                    print(message.format(
                         i, len(iterable), eta=eta_string, meters=str(self),
                         time=str(iteration_time), data=str(data_time)), flush=True)
             i += 1
@@ -114,13 +114,13 @@ class MetricLogger(object):
         print(f'{header} total time: {total_time_str}\n')
 
 
-def accuracy(output, target, top_k=(1,)):
+def compute_accuracy(output, target, top_k=(1,)):
     with torch.no_grad():
         max_k = max(top_k)
         batch_size = target.size(0)
-        _, pred = output.topk(max_k, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.unsqueeze(1))
+        _, prediction = output.topk(max_k, 1, True, True)
+        prediction = prediction.t()
+        correct = prediction.eq(target.unsqueeze(1))
 
         res = []
         for k in top_k:

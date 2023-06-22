@@ -9,7 +9,7 @@ import torchvision
 
 from common import transforms as T
 from common import utils
-from eval_video_dataset import EvalVideoDataset
+from extracting_features_dataset import ExtractingFeaturesDataset
 from models.model import Model
 
 sys.path.insert(0, '..')
@@ -17,10 +17,10 @@ sys.path.insert(0, '..')
 
 def extract_features(model, data_loader, device):
     model.eval()
-    metric_logger = utils.MetricLogger(delimiter=' ')
+    logger = utils.Logger(delimiter=' ')
     header = 'Feature extraction:'
     with torch.no_grad():
-        for sample in metric_logger.log_every(data_loader, 10, header, device=device):
+        for sample in logger.log(data_loader, 10, header, device=device):
             clip = sample['clip'].to(device, non_blocking=True)
             _, features = model(clip, return_features=True)
             data_loader.dataset.save_features(features, sample)
@@ -56,7 +56,7 @@ def main(args):
         lambda f: os.path.exists(os.path.join(args.output_dir, os.path.basename(f).split('.')[0] + '.pkl')))
     metadata_df = metadata_df[metadata_df['is-computed-already'] is False].reset_index(drop=True)
     print(f'Number of videos to process after excluding the ones already computed on disk: {len(metadata_df)}')
-    dataset = EvalVideoDataset(
+    dataset = ExtractingFeaturesDataset(
         metadata_df=metadata_df,
         root_dir=args.data_path,
         clip_length=args.clip_length,
