@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument('--device', default='cuda',
                         help='Device to train on')
 
-    parser.add_argument('--clip-len', default=16, type=int,
+    parser.add_argument('--clip-length', default=16, type=int,
                         help='Number of frames per clip')
     parser.add_argument('--frame-rate', default=15, type=int,
                         help='Frames-per-second rate at which the videos are sampled')

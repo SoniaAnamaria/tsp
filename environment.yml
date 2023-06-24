@@ -1,14 +1,15 @@
-name: tsp
+name: pbtv
 channels:
-  - pytorch
-  - conda-forge
   - defaults
+  - conda-forge
+  - pytorch
 dependencies:
-  - torchvision=0.5.0
-  - pytorch=1.4.0
-  - cudatoolkit=10.1
-  - pandas
-  - h5py
-  - av
-  - joblib
-  - tqdm
+  - av=10.0.0
+  - cudatoolkit=11.3.1
+  - h5py=3.7.0
+  - joblib=1.1.1
+  - pandas=1.5.3
+  - python=3.9.16
+  - pytorch=1.12.1
+  - torchvision=0.13.1
+  - tqdm=4.65.0

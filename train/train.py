@@ -148,7 +148,7 @@ def main(args):
     dataset_train = TrainingDataset(
         csv_filename=args.train_csv_filename,
         root_dir=train_dir,
-        clip_length=args.clip_len,
+        clip_length=args.clip_length,
         frame_rate=args.frame_rate,
         clips_per_segment=args.clips_per_segment,
         temporal_jittering=True,
@@ -175,7 +175,7 @@ def main(args):
     dataset_valid = TrainingDataset(
         csv_filename=args.valid_csv_filename,
         root_dir=valid_dir,
-        clip_length=args.clip_len,
+        clip_length=args.clip_length,
         frame_rate=args.frame_rate,
         clips_per_segment=args.clips_per_segment,
         temporal_jittering=False,
